@@ -1,5 +1,8 @@
 # from attrs import define
 from dataclasses import dataclass, field
+from pathlib import Path
+from time import monotonic
+from typing import Optional, Union
 import numpy as np
 from numpy.fft import ifft, ifftshift
 
@@ -11,6 +14,7 @@ from deistools.processing import detrending
 from pyeclab import Channel
 
 from elma._compat import patch_npbuffer
+from elma.utils import log_online_analysis_error, log_online_analysis_timing
 
 
 @dataclass
@@ -35,18 +39,60 @@ class BlockCalculator:
     potentiostat : Channel
     conditions: list[ConditionAverageScope] = field(default_factory=list)
     impedance_index: int = field(default= 0)
+    save_dir : Optional[Union[str, Path]] = None  # experiment folder; when set, results are saved after every block
     impedance : np.array = field(init=False)
     voltage_ds: NumpyCircularBuffer = field(init=False)
     current_ds: NumpyCircularBuffer = field(init=False)
     
     def __post_init__(self):
         patch_npbuffer()  # no-op unless the installed npbuffer still has its data-loss bug
+        self.save_dir = None if self.save_dir is None else Path(self.save_dir)
         self.high_z_calculator.compute_freq_axis()
         self.voltage_ds = NumpyCircularBuffer(self.buffer_size, np.float32)
         self.current_ds = NumpyCircularBuffer(self.buffer_size, np.float32)
         self.reset_impedance_memory()
 
+    def _technique_folder(self) -> Path:
+        # current_loop / current_tech_index are the Channel's trackers for the technique that is
+        # running now -- the same values DEISchannel._execute_on_technique_termination uses for
+        # its own folder name, so the end-of-technique save lands in this very folder.
+        return self.save_dir / "pico_aquisition" / (
+            f"cycle_{self.potentiostat.current_loop}_sequence_{self.potentiostat.current_tech_index}"
+        )
+
     def calculate(self, data_voltage, data_current):
+        """
+        Process one window of voltage/current. With `save_dir` set it also (a) logs timing to
+        logs/online_analysis_timing.log, (b) logs a failure, with traceback, to
+        logs/online_analysis_errors.log before re-raising (the caller is a bare Thread that would
+        swallow it), and (c) writes the decimated voltage/current and the impedance accumulated
+        so far to <save_dir>/pico_aquisition/cycle_<loop>_sequence_<technique>/
+        {voltage,current,impedance}.npy -- the same files and names deistools/elma write when a
+        technique ends, which then simply overwrite them with identical content. Without it a
+        crash or a manual Stop loses everything since the last technique end.
+        """
+        if self.save_dir is None:
+            self._calculate_block(data_voltage, data_current)
+            return
+        log_online_analysis_timing(self.save_dir, f"calculate() started (impedance_index={self.impedance_index})")
+        start = monotonic()
+        try:
+            self._calculate_block(data_voltage, data_current)
+        except Exception:
+            log_online_analysis_error(self.save_dir)
+            log_online_analysis_timing(self.save_dir, "calculate() RAISED -- see online_analysis_errors.log")
+            raise
+        log_online_analysis_timing(
+            self.save_dir,
+            f"calculate() finished (impedance_index={self.impedance_index}, took {monotonic() - start:.2f}s)",
+        )
+        folder = self._technique_folder()
+        folder.mkdir(parents=True, exist_ok=True)
+        np.save(folder / "voltage.npy", self.voltage_ds.get_data())
+        np.save(folder / "current.npy", self.current_ds.get_data())
+        np.save(folder / "impedance.npy", self.impedance[:, :self.impedance_index])
+
+    def _calculate_block(self, data_voltage, data_current):
         self.high_z_calculator.voltage, coordinates_voltage = detrending.remove_baseline(data_voltage, self.sampling_time)
         self.high_z_calculator.current, coordinates_current = detrending.remove_baseline(data_current, self.sampling_time)
         # self.high_z_calculator.voltage = data_voltage

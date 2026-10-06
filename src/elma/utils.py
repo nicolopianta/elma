@@ -1,3 +1,7 @@
+import traceback
+from datetime import datetime
+from pathlib import Path
+
 import numpy as np
 from pyeclab.api.kbio_tech import ECC_parm, make_ecc_parm, make_ecc_parms
 from pyeclab.techniques.functions import reset_duration, set_duration_to_1s
@@ -53,3 +57,42 @@ def check_software_limits(deischannel):
               condition.buffer.empty()
               return True
     return False
+
+
+def log_online_analysis_timing(save_dir, message: str):
+    """
+    Append a timestamped line to <save_dir>/logs/online_analysis_timing.log (no-op when
+    save_dir is None; never raises). Records when each block is popped off the scope's
+    buffer, how much data was waiting, when calculate() starts/finishes and when a poll
+    cycle is skipped because the previous block is still being processed -- enough to work
+    out afterwards why a run produced fewer blocks than duration / window period suggests
+    (start-up lag before the first full window, the run ending before a last window is
+    popped, a slow calculate() eating poll cycles, ...).
+    """
+    if save_dir is None:
+        return
+    try:
+        log_dir = Path(save_dir) / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        with open(log_dir / "online_analysis_timing.log", "a") as f:
+            f.write(f"{datetime.now().isoformat()}  {message}\n")
+    except Exception:
+        pass
+
+
+def log_online_analysis_error(save_dir):
+    """Append the traceback of the exception being handled to
+    <save_dir>/logs/online_analysis_errors.log (no-op when save_dir is None; never raises).
+    Block calculations run in a bare Thread that swallows exceptions silently, so this log
+    is the only place a failed block shows up."""
+    if save_dir is None:
+        return
+    try:
+        log_dir = Path(save_dir) / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        with open(log_dir / "online_analysis_errors.log", "a") as f:
+            f.write(f"{datetime.now().isoformat()}\n")
+            f.write(traceback.format_exc())
+            f.write("\n")
+    except Exception:
+        pass
