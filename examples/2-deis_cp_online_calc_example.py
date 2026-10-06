@@ -7,7 +7,7 @@ from pyeclab import BiologicDevice, ChannelConfig, FileWriter, Channel, BANDWIDT
 from pyeclab.techniques import ChronoPotentiometry
 from trueformawg import TrueFormAWG, VISAdevices, import_awg_txt
 from pypicostreaming import Picoscope5000a
-from deistools.processing import MultiFrequencyAnalysis, fermi_dirac_filter
+from deistools.processing import MultiFrequencyAnalysis, FermiDiracFilter
 from elma import DEISchannel, PicoCalculator, BlockCalculator
 
 
@@ -148,9 +148,10 @@ block_calculator = BlockCalculator(
     input_size = block_size,
     sampling_time = sampling_time,
     high_z_calculator = high_z_calculator,
-    lp_filter = fermi_dirac_filter(high_z_calculator.freq_axis, 0, 2 * filter_cutoff, filter_order),
+    lp_filter = FermiDiracFilter(high_z_calculator.freq_axis, 0, 2 * filter_cutoff, filter_order),
     ds_factor = ds_factor,
     buffer_size =buffer_size,
+    potentiostat = channel1,
 )
 
 # Inject block calculator into PicoCalculator
@@ -158,6 +159,7 @@ block_calculator = BlockCalculator(
 pico_calculator = PicoCalculator(
     pico = pico,
     block_calculator= block_calculator,
+    potentiostat = channel1,
 )
 
 # Inject instrument object into DEISchannel object
@@ -165,6 +167,7 @@ pico_calculator = PicoCalculator(
 deischannel = DEISchannel(
     potentiostat = channel1,
     pico = pico_calculator,
+    frequencies = frequencies,
     awg=awg_ch1,
 )
 
