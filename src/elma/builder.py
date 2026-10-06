@@ -216,7 +216,6 @@ def build_run(config: dict, multisine=None, multisine_split=None, hardware: Opti
     """Connect to the instruments and build the run described by `config` (see the module docstring).
     Raises ValueError for an inconsistent configuration before any scope is created."""
     hw = hardware or default_hardware()
-    t = hw.techniques
     saving_dir = Path(config["experiment"]["saving_directory"]) / config["experiment"]["experiment_name"]
     frequencies = C.design_frequencies(multisine, multisine_split)
 
