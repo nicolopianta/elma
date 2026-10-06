@@ -692,6 +692,11 @@ class InspectionTab(QWidget):
         n_blocks = self._impedance.shape[1]
         index = min(max(index, 0), n_blocks - 1)
         z = self._impedance[:, index]
+        # The zero-frequency row (V_dc / I_dc, real by construction, sign follows the current direction)
+        # is not an impedance: it is left out of the Nyquist plot. Its DC voltage/current are in the
+        # potential/current panels.
+        if self._frequencies is not None and self._frequencies.size == z.size:
+            z = z[self._frequencies > 0]
         self._nyquist_line.set_data(z.real, -z.imag)
         self._ax_nyquist.relim()
         self._ax_nyquist.autoscale_view()

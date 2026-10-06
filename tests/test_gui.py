@@ -158,6 +158,19 @@ class Inspection(unittest.TestCase):
         np.testing.assert_allclose(view["raw_v"][:100] - view["v_trend"][:100], view["v_det"][:100], atol=1e-6)
         self.assertIn("Smooth spline", self.tab.dmfa_status_label.text())
 
+    def test_nyquist_leaves_out_the_zero_frequency_row(self):
+        self.tab._load_from_folder(self.root)
+        self.tab.dmfa_cutoff_spin.setValue(0.5)
+        self.tab.dmfa_resampling_spin.setValue(self.FS)
+        self.tab._on_run_dmfa()
+        self.assertEqual(self.tab._frequencies[0], 0.0)               # the row is still in the data ...
+        self.tab.block_slider.setValue(40)
+        x, y = self.tab._nyquist_line.get_data()
+        z = self.tab._impedance[1:, 40]                              # ... but not in the plot
+        np.testing.assert_allclose(x, z.real)
+        np.testing.assert_allclose(y, -z.imag)
+        self.assertEqual(x.size, 5)
+
     def test_detrend_view_can_be_updated_without_running_dmfa(self):
         self.tab._load_from_folder(self.root)
         self.tab.dmfa_cutoff_spin.setValue(0.5)
