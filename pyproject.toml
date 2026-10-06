@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "elma"
 version = "0.1.0"
@@ -9,17 +13,28 @@ maintainers = [
     {name = "Federico Scarpioni", email = "federicoscarpioni@gmail.com"},
 ]
 readme = "README.md"
-requires-python = ""
+requires-python = ">=3.10"
 dependencies = [
     "numpy",
     "pyeclab",
     "pypicostreaming",
     "trueformawg",
     "npbuffer",
-    "deistools @ git+https://github.com/federicoscarpioni/DEIStools.git",
+    # elma needs the DMFA/detrending/loader additions of the gui-support branch of the fork until they are
+    # merged upstream (federicoscarpioni/DEIStools); then switch back to the upstream URL.
+    "deistools @ git+https://github.com/nicolopianta/DEIStools.git@gui-support",
 ]
 license = "MIT"
 license-files = ["LICENSE"]
+
+[project.optional-dependencies]
+# multisine design (elma.design, elma.config.load_design): the multisine package and lmfit for phase optimisation
+design = ["multisine", "lmfit", "scipy"]
+# the graphical interface: elma-gui (Multisine Designer, Experiment Builder, Inspection)
+gui = ["PyQt5", "matplotlib", "pandas", "scipy", "lmfit", "multisine"]
+
+[project.scripts]
+elma-gui = "elma.gui.app:main"
 
 [project.urls]
 Repository = "https://github.com/federicoscarpioni/elma.git"
