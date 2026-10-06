@@ -10,6 +10,8 @@ from deistools.processing import detrending
 
 from pyeclab import Channel
 
+from elma._compat import patch_npbuffer
+
 
 @dataclass
 class ConditionAverageScope:
@@ -38,6 +40,7 @@ class BlockCalculator:
     current_ds: NumpyCircularBuffer = field(init=False)
     
     def __post_init__(self):
+        patch_npbuffer()  # no-op unless the installed npbuffer still has its data-loss bug
         self.high_z_calculator.compute_freq_axis()
         self.voltage_ds = NumpyCircularBuffer(self.buffer_size, np.float32)
         self.current_ds = NumpyCircularBuffer(self.buffer_size, np.float32)
