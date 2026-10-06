@@ -19,7 +19,8 @@ class ConditionAverage:
     buffer : NumpyCircularBuffer = field(init = False)
 
     def __post_init__(self):
-        self.buffer = NumpyCircularBuffer(self.num_elements, dtype=np.float16)
+        # float64: float16 has ~2 mV resolution at 2.6 V and rounds every limit comparison
+        self.buffer = NumpyCircularBuffer(self.num_elements, dtype=np.float64)
 
 def condition_avarage_serialization_factory(data):
     result_dict = {}
