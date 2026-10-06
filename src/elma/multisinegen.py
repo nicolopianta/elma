@@ -17,6 +17,26 @@ class MultisineGenerator:
     sample_rates : list[int]
     amplitudes: list[float]
 
+    @classmethod
+    def for_steps(cls, channel, step_indexes, waveform_name, sample_rate, amplitude):
+        """
+        A generator that plays one waveform during the given sequence steps (technique
+        indexes) and is silent during all the others: update(index) switches the output on for
+        an index in `sequence_indexes` and off for any other. names, sample_rates and
+        amplitudes are looked up by position in `sequence_indexes`, so each is repeated once per
+        step. (Passing sequence_indexes=[0] made the AWG go silent after the first step.)
+        """
+        step_indexes = list(step_indexes)
+        n = len(step_indexes)
+        return cls(
+            channel=channel,
+            waveforms_names=[waveform_name],
+            sequence_indexes=step_indexes,
+            names=[waveform_name] * n,
+            sample_rates=[sample_rate] * n,
+            amplitudes=[amplitude] * n,
+        )
+
     def turn_on(self):
         self.channel.turn_on()
 
