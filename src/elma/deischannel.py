@@ -3,7 +3,7 @@ from time import sleep
 import json
 from threading import Thread
 from dataclasses import dataclass, field, asdict
-from typing import Union
+from typing import Optional, Union
 
 from pyeclab import Channel
 from elma.utils import ConditionAverage, check_software_limits, condition_avarage_serialization_factory
@@ -13,17 +13,27 @@ from elma.multisinegen import MultisineGenerator, MultisineGeneratorCombined, Wa
 
 @dataclass
 class DEISchannel:
+    """
+    deis_indexes: technique indexes (positions in the potentiostat sequence) during which DEIS
+    is performed. For the other steps nothing is saved when they end and the scope buffers are
+    emptied; the AWG is switched on only for the steps in its own `sequence_indexes` (build the
+    two from the same list, see MultisineGenerator.for_steps). The list is also given to the
+    pico calculator unless it already has one. None keeps the old behaviour: every step is saved.
+    """
     potentiostat : Channel
     pico : PicoCalculator # This should be also a normal pico
     frequencies : np.array
     awg : Union[MultisineGenerator, MultisineGeneratorCombined] = field(default=None)
     conditions: list[ConditionAverage] = field(default_factory=list)
     running : bool = field(default=False)
+    deis_indexes : Optional[list[int]] = None
 
 
     def __post_init__(self):
         self.run_thread = Thread(target=self._run)
         self.potentiostat.function = self._execute_on_technique_termination
+        if self.deis_indexes is not None and getattr(self.pico, 'deis_indexes', 0) is None:
+            self.pico.deis_indexes = self.deis_indexes
     
 
     def start(self):
@@ -81,7 +91,12 @@ class DEISchannel:
     def _execute_on_technique_termination(self):
         print('Program should now execute saving')
         if self.awg: self._update_waveform()
-        self.pico.save_block_calculation(f'/cycle_{self.potentiostat.current_loop}_sequence_{self.potentiostat.current_tech_index}')
+        if self.deis_indexes is None or self.potentiostat.current_tech_index in self.deis_indexes:
+            self.pico.save_block_calculation(f'/cycle_{self.potentiostat.current_loop}_sequence_{self.potentiostat.current_tech_index}')
+        else:
+            # a step without DEIS leaves no folder; its scope samples must not leak into the
+            # first window of the next step
+            self.pico.empty_buffers()
 
 
     def save_metadata(self):
@@ -90,7 +105,9 @@ class DEISchannel:
             'AWG controlled' : 'No' if self.awg == None else 'Yes',
             'Frequencies multisine (Hz)': self.frequencies.tolist(),
         }
-        if type(self.awg) == MultisineGenerator :
+        if self.deis_indexes is not None:
+            metadata_dict['DEIS steps (technique indexes)'] = list(self.deis_indexes)
+        if isinstance(self.awg, MultisineGenerator) :
             metadata_dict.update(
                 {
                     'Channel number' : self.awg.channel.channel_num,
@@ -101,7 +118,7 @@ class DEISchannel:
                     'Amplitudes sequence' : self.awg.amplitudes,
                 }
             )
-        if type(self.awg) == MultisineGeneratorCombined :
+        if isinstance(self.awg, MultisineGeneratorCombined) :
             metadata_dict.update(
                 {
                     'Channel 1' : {
@@ -120,7 +137,7 @@ class DEISchannel:
                     },
                 }
             )
-        if type(self.pico) == PicoCalculator:
+        if isinstance(self.pico, PicoCalculator):
             index_remaining_frequencies = self.frequencies.size - self.pico.block_calculator.high_z_calculator.frequencies.size
             metadata_dict.update({
                 'Window length (Sa)' : self.pico.block_calculator.input_size,
