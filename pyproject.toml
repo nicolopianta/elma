@@ -16,10 +16,12 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "numpy",
-    "pyeclab",
-    "pypicostreaming",
-    "trueformawg",
-    "npbuffer",
+    # The author's own packages are NOT on PyPI (and "multisine" on PyPI is an unrelated project): they
+    # have to be installed from GitHub.
+    "pyeclab @ git+https://github.com/federicoscarpioni/pyeclab.git",
+    "pypicostreaming @ git+https://github.com/federicoscarpioni/pypicostreaming.git",
+    "trueformawg @ git+https://github.com/federicoscarpioni/trueformawg.git",
+    "npbuffer @ git+https://github.com/federicoscarpioni/NumpyCircularBuffer.git",
     # elma needs the DMFA/detrending/loader additions of the gui-support branch of the fork until they are
     # merged upstream (federicoscarpioni/DEIStools); then switch back to the upstream URL.
     "deistools @ git+https://github.com/nicolopianta/DEIStools.git@gui-support",
@@ -29,9 +31,10 @@ license-files = ["LICENSE"]
 
 [project.optional-dependencies]
 # multisine design (elma.design, elma.config.load_design): the multisine package and lmfit for phase optimisation
-design = ["multisine", "lmfit", "scipy"]
+# galvani, scipy and pandas are imported by the multisine package but not declared in its metadata
+design = ["multisine @ git+https://github.com/federicoscarpioni/multisine.git", "galvani", "lmfit", "scipy", "pandas"]
 # the graphical interface: elma-gui (Multisine Designer, Experiment Builder, Inspection)
-gui = ["PyQt5", "matplotlib", "pandas", "scipy", "lmfit", "multisine"]
+gui = ["PyQt5", "matplotlib", "pandas", "scipy", "lmfit", "galvani", "multisine @ git+https://github.com/federicoscarpioni/multisine.git"]
 
 [project.scripts]
 elma-gui = "elma.gui.app:main"
