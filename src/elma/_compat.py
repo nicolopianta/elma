@@ -27,16 +27,19 @@ def patch_npbuffer():
     """
     Fix two data-loss bugs in `npbuffer.NumpyCircularBuffer.push()` (used for the decimated
     voltage/current of BlockCalculator, where we have no hook to substitute another class).
-    Idempotent; does nothing if the installed npbuffer is already correct.
+    Idempotent; does nothing if the installed npbuffer is already correct. The same fix is in the
+    npbuffer repository itself (branch gui-support of the fork); this patch goes away once it is released.
 
-    Once the buffer is full ("overflown"), head and tail must stay in lockstep -- every push
-    overwrites exactly as much old data as it writes.
+    Whether the oldest samples are overwritten depends on what is stored plus what comes in, not
+    on whether the write crosses the end of the array: once the buffer is full ("overflown"),
+    head and tail stay in lockstep (every push overwrites as much old data as it writes); before
+    that the head stays where pop()/empty() left it. The head must NOT be moved just because a
+    push wraps: after empty() (the end of every technique) the next run starts mid-array.
     1. The "wrap" branch (the push crosses the end of the array) only moved the head when the
-       buffer was already overflown. A push that wraps is by definition the one that overflows
-       it for the first time, so the head was left at 0 while the tail moved on, and
-       get_data() returned only the samples up to the tail (push 4 then 5 into a buffer of 6
-       returned 2 samples). It matters whenever the buffer size is not a multiple of the push
-       size. The head now always follows the tail there.
+       buffer was already overflown, so the push that overflows it for the first time left the
+       head behind and get_data() returned only the samples up to the tail (push 4 then 5 into a
+       buffer of 6 returned 2 samples). It matters whenever the buffer size is not a multiple of
+       the push size.
     2. The "no-wrap" branch instead did
        `self._head = self._tail if self._tail > self._head else self._head`: when a push lands
     exactly flush with the end of the array, the new tail wraps to 0 (`% maxlen`), 0 is never
@@ -58,20 +61,17 @@ def patch_npbuffer():
     def fixed_push(self, new_data):
         if new_data.size > self.maxlen:
             raise Exception("Data input is longer than buffer size. Operation not possible.")
+        total = self.get_length() + new_data.size
         if self._tail + new_data.size > self.maxlen:
-            overflow = (self._tail + new_data.size) - self.maxlen
-            self._data[self._tail:self.maxlen] = new_data[:self.maxlen - self._tail]
-            self._data[0:overflow] = new_data[self.maxlen - self._tail:]
-            self._tail = overflow
-            self._head = self._tail
-            self._overflown = True
+            split = self.maxlen - self._tail
+            self._data[self._tail:self.maxlen] = new_data[:split]
+            self._data[0:new_data.size - split] = new_data[split:]
         else:
             self._data[self._tail:self._tail + new_data.size] = new_data
-            self._tail = (self._tail + new_data.size) % self.maxlen
-            if self._overflown:
-                self._head = self._tail
-        if self._tail == self._head:
-            self._overflown = True
+        self._tail = (self._tail + new_data.size) % self.maxlen
+        if total > self.maxlen:
+            self._head = self._tail  # the oldest samples were overwritten
+        self._overflown = total >= self.maxlen
 
     NumpyCircularBuffer.push = fixed_push
     return True

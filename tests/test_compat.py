@@ -36,6 +36,37 @@ class NpbufferPatch(unittest.TestCase):
         buffer.push(np.arange(4, 9, dtype=np.float32))
         self.assertEqual(buffer.get_data().tolist(), [3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
 
+    def test_a_run_after_empty_that_wraps_around_the_array_starts_clean(self):
+        # the end of every technique empties the buffer; the next technique then starts mid-array
+        _compat.patch_npbuffer()
+        buffer = NumpyCircularBuffer(10, np.float32)
+        buffer.push(np.arange(0, 6, dtype=np.float32))
+        self.assertEqual(buffer.empty().tolist(), [0.0, 1.0, 2.0, 3.0, 4.0, 5.0])
+        buffer.push(np.arange(10, 16, dtype=np.float32))          # wraps, 6 samples stored
+        self.assertEqual(buffer.get_data().tolist(), [10.0, 11.0, 12.0, 13.0, 14.0, 15.0])
+        self.assertEqual(buffer.empty().tolist(), [10.0, 11.0, 12.0, 13.0, 14.0, 15.0])
+
+    def test_matches_a_plain_list_for_mixed_push_pop_and_empty(self):
+        _compat.patch_npbuffer()
+        rng = np.random.default_rng(1)
+        for maxlen in (5, 8, 13):
+            buffer, reference, n = NumpyCircularBuffer(maxlen, np.float32), [], 0
+            for _ in range(400):
+                action = int(rng.integers(0, 4))
+                if action < 2:
+                    size = int(rng.integers(0, maxlen + 1))
+                    buffer.push(np.arange(n, n + size, dtype=np.float32))
+                    reference = (reference + list(range(n, n + size)))[-maxlen:]
+                    n += size
+                elif action == 2 and reference:
+                    count = int(rng.integers(1, len(reference) + 1))
+                    self.assertEqual(buffer.pop(count).tolist(), reference[:count])
+                    reference = reference[count:]
+                else:
+                    self.assertEqual(buffer.empty().tolist(), reference)
+                    reference = []
+                self.assertEqual(buffer.get_data().tolist(), reference)
+
     def test_block_calculator_applies_the_patch_itself(self):
         # user scripts never call patch_npbuffer: building a BlockCalculator is enough
         from deistools.processing import FermiDiracFilter, MultiFrequencyAnalysis
