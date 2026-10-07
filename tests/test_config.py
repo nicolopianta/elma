@@ -57,6 +57,37 @@ class WindowAndCapture(unittest.TestCase):
         self.assertEqual(C.compute_capture_size(np.array([1.0]), [ca(10.0), OCV], False, 1e-3), 40_000)
         self.assertIsNone(C.compute_capture_size(np.array([1.0]), [LOOP], False, 1e-3))
 
+    def test_capture_size_without_decimation_counts_the_loop_passes(self):
+        # OCV 30 s once, then CA 10 s run 3 times (Loop back to step 1, repeat 2 more times)
+        seq = [OCV, ca(10.0), loop(2, 1)]
+        self.assertEqual(C.compute_capture_size(np.array([1.0]), seq, False, 1e-3), (30 + 3 * 10) * 1000)
+
+    def test_capture_size_with_decimation_ignores_loops(self):
+        seq = [ca(10.0), loop(5, 0)]
+        self.assertEqual(C.compute_capture_size(np.array([1.0]), seq, True, 1e-3), 3000)
+
+
+def loop(repeat_n, start):
+    return {"type": "Loop", "repeat_N": repeat_n, "loop_start": start}
+
+
+class StepPasses(unittest.TestCase):
+    def test_no_loop_means_one_pass(self):
+        self.assertEqual(C.step_passes([ca(), OCV, cp()]), [1, 1, 1])
+
+    def test_loop_repeats_the_steps_from_loop_start(self):
+        self.assertEqual(C.step_passes([OCV, ca(), cp(), loop(3, 1)]), [1, 4, 4, 1])
+        self.assertEqual(C.step_passes([ca(), cp(), loop(1, 0)]), [2, 2, 1])
+
+    def test_nested_loops_multiply(self):
+        seq = [ca(), cp(), loop(2, 1), loop(1, 0)]   # inner: cp x3; outer: ca and the whole inner x2
+        self.assertEqual(C.step_passes(seq), [2, 6, 2, 1])   # (the inner Loop step itself runs once per outer pass)
+
+    def test_a_loop_that_does_not_point_back_is_ignored(self):
+        self.assertEqual(C.step_passes([ca(), loop(4, 1)]), [1, 1])
+        self.assertEqual(C.step_passes([ca(), loop(4, 5)]), [1, 1])
+        self.assertEqual(C.step_passes([ca(), loop(0, 0)]), [1, 1])
+
 
 class Resolvers(unittest.TestCase):
     def test_potential_amplitude_is_used_as_is(self):

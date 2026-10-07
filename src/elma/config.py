@@ -137,18 +137,40 @@ def compute_analysis_window_and_buffer(frequencies, sequence, sampling_time_s):
     return window_size, buffer_duration
 
 
+def step_passes(sequence) -> list:
+    """
+    How many times the instrument runs each step of `sequence`, Loop steps included. A Loop step with
+    repeat_N = N sends the instrument back to step loop_start N more times, so the steps from loop_start
+    up to the Loop run N + 1 times (nested loops multiply). A Loop that does not point back to an earlier
+    step is ignored.
+    """
+    passes = [1] * len(sequence)
+    for i, spec in enumerate(sequence):
+        if spec["type"] != "Loop":
+            continue
+        start, extra = int(spec["loop_start"]), int(spec["repeat_N"])
+        if 0 <= start < i and extra > 0:
+            for j in range(start, i):
+                passes[j] *= extra + 1
+    return passes
+
+
 def compute_capture_size(frequencies, sequence, decimation_enabled, sampling_time_s):
     """
     Oscilloscope capture size in samples. Decimation on: 3x the analysis window (the ring buffer must
     hold MORE than one window or a block can never be popped). Decimation off: the whole run (sum of
-    the timed steps' durations), captured and saved raw. None if it cannot be computed yet.
+    the timed steps' durations, each counted as many times as the Loop steps make it run), captured and
+    saved raw in one piece. None if it cannot be computed yet.
     """
     if decimation_enabled:
         window_size, _ = compute_analysis_window_and_buffer(frequencies, sequence, sampling_time_s)
         if window_size is None:
             return None
         return 3 * window_size
-    total_duration = sum(spec["duration"] for spec in sequence if spec["type"] in DURATION_STEP_TYPES)
+    total_duration = sum(
+        spec["duration"] * passes
+        for spec, passes in zip(sequence, step_passes(sequence)) if spec["type"] in DURATION_STEP_TYPES
+    )
     if total_duration <= 0:
         return None
     return max(1, int(round(total_duration / sampling_time_s)))
