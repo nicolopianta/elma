@@ -12,7 +12,7 @@ except Exception:  # pragma: no cover
     HAVE_QT = False
 
 if HAVE_QT:
-    from elma.gui.quantity import CURRENT_UNITS, TIME_UNITS, VOLTAGE_UNITS, QuantityEdit, natural_unit
+    from elma.gui.quantity import CURRENT_UNITS, TIME_UNITS, VOLTAGE_UNITS, QuantityEdit, TimeEdit, natural_unit
 
 UA = "\u00b5A"
 
@@ -174,6 +174,106 @@ class ExperimentBuilderFields(unittest.TestCase):
         other = ExperimentBuilderTab()
         other._apply_loaded_settings(saved)
         self.assertEqual((other.awg_amplitude_spin.unit(), other.awg_amplitude_spin.number()), ("mV", 20.0))
+        self.assertEqual(other._gather_settings_for_save(), saved)
+
+
+@unittest.skipUnless(HAVE_QT, "PyQt5 not available")
+class TimeEditWidget(unittest.TestCase):
+    def test_value_in_seconds_is_split_into_h_min_s(self):
+        w = TimeEdit()
+        w.setValue(3725.5)
+        self.assertEqual(w.hms(), (1, 2, 5.5))
+        self.assertEqual(w.value(), 3725.5)
+        w.setValue(30)
+        self.assertEqual((w.hms(), w.value()), ((0, 0, 30.0), 30.0))
+
+    def test_typing_into_the_boxes_sets_the_total(self):
+        w = TimeEdit()
+        w.setHMS(2, 30, 15.25)
+        self.assertEqual(w.value(), 2 * 3600 + 30 * 60 + 15.25)
+        seen = []
+        w.valueChanged.connect(seen.append)
+        w._minutes.setValue(45)
+        self.assertEqual(seen[-1], 2 * 3600 + 45 * 60 + 15.25)
+
+    def test_the_arrows_carry_and_borrow(self):
+        w = TimeEdit()
+        w.setHMS(0, 0, 59)
+        w._seconds.stepBy(1)                    # 59 s + 1 s
+        self.assertEqual(w.hms(), (0, 1, 0.0))
+        w._seconds.stepBy(-1)
+        self.assertEqual(w.hms(), (0, 0, 59.0))
+        w.setHMS(0, 59, 0)
+        w._minutes.stepBy(1)
+        self.assertEqual(w.hms(), (1, 0, 0.0))
+        w.setValue(0)
+        w._seconds.stepBy(-1)                   # cannot go below the minimum
+        self.assertEqual(w.value(), 0.0)
+
+    def test_total_is_limited_to_the_range(self):
+        w = TimeEdit()
+        w.setRange(0, 7200)
+        w.setValue(99999)
+        self.assertEqual(w.value(), 7200.0)
+        self.assertEqual(w.hms(), (2, 0, 0.0))
+        w.setHMS(2, 59, 0)
+        self.assertEqual(w.value(), 7200.0)     # typed past the end: clamped
+
+    def test_rounding_never_leaves_sixty_seconds(self):
+        w = TimeEdit()
+        w.setValue(59.9996)
+        self.assertEqual(w.hms(), (0, 1, 0.0))
+
+    def test_decimals_of_the_seconds(self):
+        w = TimeEdit()
+        w.setValue(1.23456)
+        self.assertEqual(w.value(), 1.235)
+        w.setDecimals(1)
+        w.setValue(1.26)
+        self.assertEqual(w.value(), 1.3)
+
+
+@unittest.skipUnless(HAVE_QT, "PyQt5 not available")
+class ExperimentBuilderDurations(unittest.TestCase):
+    def setUp(self):
+        from elma.gui.tabs.experiment_builder_tab import ExperimentBuilderTab
+        self.tab = ExperimentBuilderTab()
+
+    def _add(self, index):
+        self.tab.technique_type_combo.setCurrentIndex(index)
+        self.tab._on_add_technique_step()
+
+    def test_step_durations_are_entered_as_h_min_s_and_stored_in_seconds(self):
+        self.tab.ca_duration_spin.setHMS(1, 2, 3)
+        self._add(0)
+        self.tab.ocv_duration_spin.setHMS(0, 0, 45)
+        self._add(4)
+        self.assertEqual([s["duration"] for s in self.tab._sequence_specs], [3723.0, 45.0])
+        self.assertEqual(self.tab._sequence_specs[0]["type"], "CA")
+
+    def test_default_duration_is_thirty_seconds(self):
+        for name in ("ca", "calim", "cp", "cplim", "ocv"):
+            self.assertEqual(getattr(self.tab, f"{name}_duration_spin").hms(), (0, 0, 30.0))
+        self.assertEqual(self.tab.peis_duration_step_spin.hms(), (0, 1, 0.0))
+
+    def test_peis_estimate_follows_the_hold_time(self):
+        self.tab.peis_duration_step_spin.setHMS(0, 5, 0)
+        self.assertIn("300 s initial hold", self.tab.peis_duration_estimate_label.text())
+        self.tab.geis_duration_step_spin.setHMS(0, 0, 10)
+        self.assertIn("10 s initial hold", self.tab.geis_duration_estimate_label.text())
+
+    def test_duration_labels_carry_no_unit(self):
+        text = " | ".join(w.text() for w in self.tab.findChildren(QLabel))
+        self.assertNotIn("Duration (s)", text)
+
+    def test_long_duration_round_trips_through_settings(self):
+        self.tab.cp_duration_spin.setHMS(15, 0, 0)               # 54000 s, as in the long runs
+        self._add(2)
+        saved = self.tab._gather_settings_for_save()
+        self.assertEqual(saved["sequence"][0]["duration"], 54000.0)
+        from elma.gui.tabs.experiment_builder_tab import ExperimentBuilderTab
+        other = ExperimentBuilderTab()
+        other._apply_loaded_settings(saved)
         self.assertEqual(other._gather_settings_for_save(), saved)
 
 
