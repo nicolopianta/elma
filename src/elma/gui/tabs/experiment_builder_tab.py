@@ -90,6 +90,15 @@ _spec_deis_enabled = C.spec_deis_enabled
 _resolution_to_picosdk = C.resolution_to_picosdk
 
 
+# Technique-spec keys of fields that no longer exist. "nb_steps": EC-Lab's step index, always 0 here (one step per
+# technique). "repeat": EC-Lab's N_Cycles of the chrono techniques, always 0 now -- the Loop step repeats.
+_REMOVED_SPEC_KEYS = ("nb_steps", "repeat")
+
+
+def _without_removed_keys(spec: dict) -> dict:
+    return {k: v for k, v in spec.items() if k not in _REMOVED_SPEC_KEYS}
+
+
 class ExperimentBuilderTab(QWidget):
     """Configure and run a DEIS experiment: potentiostat sequence + AWG + scope + online analysis."""
 
@@ -424,8 +433,6 @@ class ExperimentBuilderTab(QWidget):
         self.ca_record_dI_spin = QuantityEdit(CURRENT_UNITS)
         self.ca_record_dI_spin.setRange(0, 1e6)
         self.ca_record_dI_spin.setValue(1)
-        self.ca_repeat_spin = QSpinBox()
-        self.ca_repeat_spin.setRange(0, 999)
         self.ca_i_range_combo = self._build_irange_combo()
         self.ca_bandwidth_combo = self._build_bandwidth_combo()
         ca_form.addRow("Voltage", self.ca_voltage_spin)
@@ -433,7 +440,6 @@ class ExperimentBuilderTab(QWidget):
         ca_form.addRow("vs.", self.ca_vs_init_combo)
         ca_form.addRow("Record every dt (s)", self.ca_record_dt_spin)
         ca_form.addRow("Record every dI", self.ca_record_dI_spin)
-        ca_form.addRow("Repeat (cycles)", self.ca_repeat_spin)
         ca_form.addRow("I range", self.ca_i_range_combo)
         ca_form.addRow("Bandwidth", self.ca_bandwidth_combo)
         self.technique_stack.addWidget(ca_widget)
@@ -454,8 +460,6 @@ class ExperimentBuilderTab(QWidget):
         self.calim_record_dI_spin = QuantityEdit(CURRENT_UNITS)
         self.calim_record_dI_spin.setRange(0, 1e6)
         self.calim_record_dI_spin.setValue(1)
-        self.calim_repeat_spin = QSpinBox()
-        self.calim_repeat_spin.setRange(0, 999)
         self.calim_i_range_combo = self._build_irange_combo()
         self.calim_bandwidth_combo = self._build_bandwidth_combo()
         calim_form.addRow("Voltage", self.calim_voltage_spin)
@@ -463,7 +467,6 @@ class ExperimentBuilderTab(QWidget):
         calim_form.addRow("vs.", self.calim_vs_init_combo)
         calim_form.addRow("Record every dt (s)", self.calim_record_dt_spin)
         calim_form.addRow("Record every dI", self.calim_record_dI_spin)
-        calim_form.addRow("Repeat (cycles)", self.calim_repeat_spin)
         calim_form.addRow("I range", self.calim_i_range_combo)
         calim_form.addRow("Bandwidth", self.calim_bandwidth_combo)
         self._add_limit_fields(calim_form, "calim")
@@ -485,8 +488,6 @@ class ExperimentBuilderTab(QWidget):
         self.cp_record_dE_spin = QuantityEdit(VOLTAGE_UNITS)
         self.cp_record_dE_spin.setRange(0, 1e6)
         self.cp_record_dE_spin.setValue(1)
-        self.cp_repeat_spin = QSpinBox()
-        self.cp_repeat_spin.setRange(0, 999)
         self.cp_i_range_combo = self._build_irange_combo()
         self.cp_i_range_combo.setCurrentText("10 mA")
         self.cp_bandwidth_combo = self._build_bandwidth_combo()
@@ -495,7 +496,6 @@ class ExperimentBuilderTab(QWidget):
         cp_form.addRow("vs.", self.cp_vs_init_combo)
         cp_form.addRow("Record every dt (s)", self.cp_record_dt_spin)
         cp_form.addRow("Record every dE", self.cp_record_dE_spin)
-        cp_form.addRow("Repeat (cycles)", self.cp_repeat_spin)
         self.cp_i_range_combo.setToolTip("Must not be Auto for this technique.")
         cp_form.addRow("I range", self.cp_i_range_combo)
         cp_form.addRow("Bandwidth", self.cp_bandwidth_combo)
@@ -517,8 +517,6 @@ class ExperimentBuilderTab(QWidget):
         self.cplim_record_dE_spin = QuantityEdit(VOLTAGE_UNITS)
         self.cplim_record_dE_spin.setRange(0, 1e6)
         self.cplim_record_dE_spin.setValue(1)
-        self.cplim_repeat_spin = QSpinBox()
-        self.cplim_repeat_spin.setRange(0, 999)
         self.cplim_i_range_combo = self._build_irange_combo()
         self.cplim_i_range_combo.setCurrentText("10 mA")
         self.cplim_bandwidth_combo = self._build_bandwidth_combo()
@@ -527,7 +525,6 @@ class ExperimentBuilderTab(QWidget):
         cplim_form.addRow("vs.", self.cplim_vs_init_combo)
         cplim_form.addRow("Record every dt (s)", self.cplim_record_dt_spin)
         cplim_form.addRow("Record every dE", self.cplim_record_dE_spin)
-        cplim_form.addRow("Repeat (cycles)", self.cplim_repeat_spin)
         self.cplim_i_range_combo.setToolTip("Must not be Auto for this technique.")
         cplim_form.addRow("I range", self.cplim_i_range_combo)
         cplim_form.addRow("Bandwidth", self.cplim_bandwidth_combo)
@@ -1194,14 +1191,14 @@ class ExperimentBuilderTab(QWidget):
     def _sequence_spec_label(spec: dict) -> str:
         t = spec["type"]
         if t == "CA":
-            return f"CA  V={spec['voltage']}V  t={spec['duration']}s  repeat={spec['repeat']}"
+            return f"CA  V={spec['voltage']}V  t={spec['duration']}s"
         if t == "CALim":
             return (
                 f"CALim  V={spec['voltage']}V  t={spec['duration']}s  "
                 f"limit={spec['limit_type']}{spec['limit_sign']}{spec['limit_value']}"
             )
         if t == "CP":
-            return f"CP  I={spec['current']}A  t={spec['duration']}s  repeat={spec['repeat']}"
+            return f"CP  I={spec['current']}A  t={spec['duration']}s"
         if t == "CPLim":
             return (
                 f"CPLim  I={spec['current']}A  t={spec['duration']}s  "
@@ -1231,7 +1228,6 @@ class ExperimentBuilderTab(QWidget):
                 "vs_init": self.ca_vs_init_combo.currentIndex() == 1,
                 "record_dt": self.ca_record_dt_spin.value(),
                 "record_dI": self.ca_record_dI_spin.value(),
-                "repeat": self.ca_repeat_spin.value(),
                 "i_range": self.ca_i_range_combo.currentText(),
                 "bandwidth": self.ca_bandwidth_combo.currentText(),
             }
@@ -1243,7 +1239,6 @@ class ExperimentBuilderTab(QWidget):
                 "vs_init": self.calim_vs_init_combo.currentIndex() == 1,
                 "record_dt": self.calim_record_dt_spin.value(),
                 "record_dI": self.calim_record_dI_spin.value(),
-                "repeat": self.calim_repeat_spin.value(),
                 "i_range": self.calim_i_range_combo.currentText(),
                 "bandwidth": self.calim_bandwidth_combo.currentText(),
                 "limit_type": self.calim_limit_type_combo.currentText(),
@@ -1259,7 +1254,6 @@ class ExperimentBuilderTab(QWidget):
                 "vs_init": self.cp_vs_init_combo.currentIndex() == 1,
                 "record_dt": self.cp_record_dt_spin.value(),
                 "record_dE": self.cp_record_dE_spin.value(),
-                "repeat": self.cp_repeat_spin.value(),
                 "i_range": self.cp_i_range_combo.currentText(),
                 "bandwidth": self.cp_bandwidth_combo.currentText(),
             }
@@ -1271,7 +1265,6 @@ class ExperimentBuilderTab(QWidget):
                 "vs_init": self.cplim_vs_init_combo.currentIndex() == 1,
                 "record_dt": self.cplim_record_dt_spin.value(),
                 "record_dE": self.cplim_record_dE_spin.value(),
-                "repeat": self.cplim_repeat_spin.value(),
                 "i_range": self.cplim_i_range_combo.currentText(),
                 "bandwidth": self.cplim_bandwidth_combo.currentText(),
                 "limit_type": self.cplim_limit_type_combo.currentText(),
@@ -1572,8 +1565,8 @@ class ExperimentBuilderTab(QWidget):
         if "external_control" in pot:
             self.external_control_check.setChecked(pot["external_control"])
 
-        # settings saved by earlier versions carry "nb_steps" (EC-Lab's step index, always 0 here): drop it
-        self._sequence_specs = [{k: v for k, v in spec.items() if k != "nb_steps"} for spec in data.get("sequence", [])]
+        # settings saved by earlier versions carry keys of fields that were removed: drop them
+        self._sequence_specs = [_without_removed_keys(spec) for spec in data.get("sequence", [])]
         self.sequence_list.clear()
         for spec in self._sequence_specs:
             self._add_sequence_list_item(spec)

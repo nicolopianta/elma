@@ -279,8 +279,9 @@ class ExperimentBuilderDurations(unittest.TestCase):
 
 
 @unittest.skipUnless(HAVE_QT, "PyQt5 not available")
-class NumberOfStepsRemoved(unittest.TestCase):
-    """EC-Lab's "Step_number" is always 0 (one step per technique); the box was removed."""
+class RemovedFields(unittest.TestCase):
+    """"Number of steps" (EC-Lab Step_number, always 0: one step per technique) and "Repeat (cycles)" (N_Cycles:
+    the Loop step repeats) were removed."""
 
     def setUp(self):
         from elma.gui.tabs.experiment_builder_tab import ExperimentBuilderTab
@@ -289,11 +290,12 @@ class NumberOfStepsRemoved(unittest.TestCase):
     def test_no_number_of_steps_box_and_no_such_key_in_the_specs(self):
         text = " | ".join(w.text() for w in self.tab.findChildren(QLabel))
         self.assertNotIn("Number of steps", text)
+        self.assertNotIn("Repeat (cycles)", text)
         for index in (0, 1, 2, 3):                       # CA, CALim, CP, CPLim
             self.tab.technique_type_combo.setCurrentIndex(index)
             self.tab._on_add_technique_step()
         self.assertEqual(len(self.tab._sequence_specs), 4)
-        self.assertTrue(all("nb_steps" not in spec for spec in self.tab._sequence_specs))
+        self.assertTrue(all("nb_steps" not in spec and "repeat" not in spec for spec in self.tab._sequence_specs))
 
     def test_settings_saved_by_earlier_versions_still_load(self):
         self.tab.technique_type_combo.setCurrentIndex(0)
@@ -301,9 +303,22 @@ class NumberOfStepsRemoved(unittest.TestCase):
         saved = self.tab._gather_settings_for_save()
         old = json.loads(json.dumps(saved))
         old["sequence"][0]["nb_steps"] = 0
+        old["sequence"][0]["repeat"] = 0
         from elma.gui.tabs.experiment_builder_tab import ExperimentBuilderTab
         other = ExperimentBuilderTab()
         other._apply_loaded_settings(old)
+        self.assertEqual(other._gather_settings_for_save(), saved)
+
+    def test_the_loop_step_keeps_its_own_repeat_count(self):
+        self.tab.loop_repeat_spin.setValue(3)
+        self.tab.loop_start_spin.setValue(0)
+        self.tab.technique_type_combo.setCurrentIndex(7)
+        self.tab._on_add_technique_step()
+        saved = self.tab._gather_settings_for_save()
+        self.assertEqual(saved["sequence"][0], {"type": "Loop", "repeat_N": 3, "loop_start": 0})
+        from elma.gui.tabs.experiment_builder_tab import ExperimentBuilderTab
+        other = ExperimentBuilderTab()
+        other._apply_loaded_settings(saved)
         self.assertEqual(other._gather_settings_for_save(), saved)
 
 
