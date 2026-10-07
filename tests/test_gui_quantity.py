@@ -1,4 +1,5 @@
 """The number + unit fields of the Experiment Builder (headless Qt; skipped without PyQt5)."""
+import json
 import os
 import unittest
 
@@ -274,6 +275,35 @@ class ExperimentBuilderDurations(unittest.TestCase):
         from elma.gui.tabs.experiment_builder_tab import ExperimentBuilderTab
         other = ExperimentBuilderTab()
         other._apply_loaded_settings(saved)
+        self.assertEqual(other._gather_settings_for_save(), saved)
+
+
+@unittest.skipUnless(HAVE_QT, "PyQt5 not available")
+class NumberOfStepsRemoved(unittest.TestCase):
+    """EC-Lab's "Step_number" is always 0 (one step per technique); the box was removed."""
+
+    def setUp(self):
+        from elma.gui.tabs.experiment_builder_tab import ExperimentBuilderTab
+        self.tab = ExperimentBuilderTab()
+
+    def test_no_number_of_steps_box_and_no_such_key_in_the_specs(self):
+        text = " | ".join(w.text() for w in self.tab.findChildren(QLabel))
+        self.assertNotIn("Number of steps", text)
+        for index in (0, 1, 2, 3):                       # CA, CALim, CP, CPLim
+            self.tab.technique_type_combo.setCurrentIndex(index)
+            self.tab._on_add_technique_step()
+        self.assertEqual(len(self.tab._sequence_specs), 4)
+        self.assertTrue(all("nb_steps" not in spec for spec in self.tab._sequence_specs))
+
+    def test_settings_saved_by_earlier_versions_still_load(self):
+        self.tab.technique_type_combo.setCurrentIndex(0)
+        self.tab._on_add_technique_step()
+        saved = self.tab._gather_settings_for_save()
+        old = json.loads(json.dumps(saved))
+        old["sequence"][0]["nb_steps"] = 0
+        from elma.gui.tabs.experiment_builder_tab import ExperimentBuilderTab
+        other = ExperimentBuilderTab()
+        other._apply_loaded_settings(old)
         self.assertEqual(other._gather_settings_for_save(), saved)
 
 

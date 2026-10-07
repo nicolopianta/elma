@@ -103,9 +103,9 @@ def _hardware():
 
 
 def _spec(kind, **kw):
-    base = {"CA": dict(voltage=0.0, vs_init=True, nb_steps=0, record_dt=1.0, record_dI=1.0, repeat=0,
+    base = {"CA": dict(voltage=0.0, vs_init=True, record_dt=1.0, record_dI=1.0, repeat=0,
                        i_range="100 µA", bandwidth="9"),
-            "CP": dict(current=0.0, vs_init=True, nb_steps=0, record_dt=1.0, record_dE=1.0, repeat=0,
+            "CP": dict(current=0.0, vs_init=True, record_dt=1.0, record_dE=1.0, repeat=0,
                        i_range="1 mA", bandwidth="9"),
             "OCV": dict(record_dt=1.0, bandwidth="9"),
             "PEIS": dict(vs_init=True, voltage_step=0.0, amplitude=0.01, initial_frequency=1e5, final_frequency=1.0,
@@ -159,6 +159,8 @@ class Sequence(unittest.TestCase):
         self.assertEqual((ca.kwargs["e_range"], ca.kwargs["i_range"], ca.kwargs["bandwidth"], ca.kwargs["xctr"]),
                          ("e5", "i100uA", "bw9", 8))
         self.assertEqual(cp.kwargs["i_range"], "i1mA")
+        # EC-Lab's "Step_number" (index of the last step of the technique's list): one step is defined, so 0
+        self.assertEqual((ca.kwargs["nb_steps"], cp.kwargs["nb_steps"]), (0, 0))
         self.assertEqual(ocv.kwargs["xctr"], 8)
         # PEIS/GEIS have their own external-control setting: off although the sequence-wide one is on
         self.assertEqual((peis.kwargs["xctr"], geis.kwargs["xctr"]), (0, 0))

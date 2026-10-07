@@ -89,26 +89,26 @@ def build_sequence(config: dict, device, hw: Hardware, channel_config):
         if kind == "CA":
             tech = t.ChronoAmperometry(
                 device=device, voltage=spec["voltage"], duration=spec["duration"], vs_init=spec["vs_init"],
-                nb_steps=spec["nb_steps"], record_dt=spec["record_dt"], record_dI=spec["record_dI"],
+                nb_steps=0, record_dt=spec["record_dt"], record_dI=spec["record_dI"],
                 repeat=spec["repeat"], e_range=e_range, i_range=i_range(spec), bandwidth=bandwidth(spec), xctr=xctr,
             )
         elif kind == "CALim":
             tech = t.ChronoAmperometryWithLimits(
                 device=device, voltage=spec["voltage"], duration=spec["duration"], vs_init=spec["vs_init"],
-                nb_steps=spec["nb_steps"], record_dt=spec["record_dt"], record_dI=spec["record_dI"],
+                nb_steps=0, record_dt=spec["record_dt"], record_dI=spec["record_dI"],
                 repeat=spec["repeat"], e_range=e_range, i_range=i_range(spec), limit_variable=limit(spec),
                 limit_value=spec["limit_value"], bandwidth=bandwidth(spec), xctr=xctr,
             )
         elif kind == "CP":
             tech = t.ChronoPotentiometry(
                 device=device, current=spec["current"], duration=spec["duration"], vs_init=spec["vs_init"],
-                nb_steps=spec["nb_steps"], record_dt=spec["record_dt"], record_dE=spec["record_dE"],
+                nb_steps=0, record_dt=spec["record_dt"], record_dE=spec["record_dE"],
                 repeat=spec["repeat"], i_range=i_range(spec), e_range=e_range, bandwidth=bandwidth(spec), xctr=xctr,
             )
         elif kind == "CPLim":
             tech = t.ChronoPotentiometryWithLimits(
                 device=device, current=spec["current"], duration=spec["duration"], vs_init=spec["vs_init"],
-                nb_steps=spec["nb_steps"], record_dt=spec["record_dt"], record_dE=spec["record_dE"],
+                nb_steps=0, record_dt=spec["record_dt"], record_dE=spec["record_dE"],
                 repeat=spec["repeat"], i_range=i_range(spec), e_range=e_range, limit_variable=limit(spec),
                 limit_value=spec["limit_value"], bandwidth=bandwidth(spec), xctr=xctr,
             )

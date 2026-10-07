@@ -418,8 +418,6 @@ class ExperimentBuilderTab(QWidget):
         self.ca_duration_spin.setRange(0, 1e7)
         self.ca_duration_spin.setValue(30)
         self.ca_vs_init_combo = self._build_vs_combo()
-        self.ca_nb_steps_spin = QSpinBox()
-        self.ca_nb_steps_spin.setRange(0, 99)
         self.ca_record_dt_spin = QDoubleSpinBox()
         self.ca_record_dt_spin.setRange(0, 1e6)
         self.ca_record_dt_spin.setValue(1)
@@ -433,7 +431,6 @@ class ExperimentBuilderTab(QWidget):
         ca_form.addRow("Voltage", self.ca_voltage_spin)
         ca_form.addRow("Duration", self.ca_duration_spin)
         ca_form.addRow("vs.", self.ca_vs_init_combo)
-        ca_form.addRow("Number of steps", self.ca_nb_steps_spin)
         ca_form.addRow("Record every dt (s)", self.ca_record_dt_spin)
         ca_form.addRow("Record every dI", self.ca_record_dI_spin)
         ca_form.addRow("Repeat (cycles)", self.ca_repeat_spin)
@@ -451,8 +448,6 @@ class ExperimentBuilderTab(QWidget):
         self.calim_duration_spin.setRange(0, 1e7)
         self.calim_duration_spin.setValue(30)
         self.calim_vs_init_combo = self._build_vs_combo()
-        self.calim_nb_steps_spin = QSpinBox()
-        self.calim_nb_steps_spin.setRange(0, 99)
         self.calim_record_dt_spin = QDoubleSpinBox()
         self.calim_record_dt_spin.setRange(0, 1e6)
         self.calim_record_dt_spin.setValue(1)
@@ -466,7 +461,6 @@ class ExperimentBuilderTab(QWidget):
         calim_form.addRow("Voltage", self.calim_voltage_spin)
         calim_form.addRow("Duration", self.calim_duration_spin)
         calim_form.addRow("vs.", self.calim_vs_init_combo)
-        calim_form.addRow("Number of steps", self.calim_nb_steps_spin)
         calim_form.addRow("Record every dt (s)", self.calim_record_dt_spin)
         calim_form.addRow("Record every dI", self.calim_record_dI_spin)
         calim_form.addRow("Repeat (cycles)", self.calim_repeat_spin)
@@ -485,8 +479,6 @@ class ExperimentBuilderTab(QWidget):
         self.cp_duration_spin.setRange(0, 1e7)
         self.cp_duration_spin.setValue(30)
         self.cp_vs_init_combo = self._build_vs_combo()
-        self.cp_nb_steps_spin = QSpinBox()
-        self.cp_nb_steps_spin.setRange(0, 99)
         self.cp_record_dt_spin = QDoubleSpinBox()
         self.cp_record_dt_spin.setRange(0, 1e6)
         self.cp_record_dt_spin.setValue(1)
@@ -501,7 +493,6 @@ class ExperimentBuilderTab(QWidget):
         cp_form.addRow("Current", self.cp_current_spin)
         cp_form.addRow("Duration", self.cp_duration_spin)
         cp_form.addRow("vs.", self.cp_vs_init_combo)
-        cp_form.addRow("Number of steps", self.cp_nb_steps_spin)
         cp_form.addRow("Record every dt (s)", self.cp_record_dt_spin)
         cp_form.addRow("Record every dE", self.cp_record_dE_spin)
         cp_form.addRow("Repeat (cycles)", self.cp_repeat_spin)
@@ -520,8 +511,6 @@ class ExperimentBuilderTab(QWidget):
         self.cplim_duration_spin.setRange(0, 1e7)
         self.cplim_duration_spin.setValue(30)
         self.cplim_vs_init_combo = self._build_vs_combo()
-        self.cplim_nb_steps_spin = QSpinBox()
-        self.cplim_nb_steps_spin.setRange(0, 99)
         self.cplim_record_dt_spin = QDoubleSpinBox()
         self.cplim_record_dt_spin.setRange(0, 1e6)
         self.cplim_record_dt_spin.setValue(1)
@@ -536,7 +525,6 @@ class ExperimentBuilderTab(QWidget):
         cplim_form.addRow("Current", self.cplim_current_spin)
         cplim_form.addRow("Duration", self.cplim_duration_spin)
         cplim_form.addRow("vs.", self.cplim_vs_init_combo)
-        cplim_form.addRow("Number of steps", self.cplim_nb_steps_spin)
         cplim_form.addRow("Record every dt (s)", self.cplim_record_dt_spin)
         cplim_form.addRow("Record every dE", self.cplim_record_dE_spin)
         cplim_form.addRow("Repeat (cycles)", self.cplim_repeat_spin)
@@ -1241,7 +1229,6 @@ class ExperimentBuilderTab(QWidget):
                 "voltage": self.ca_voltage_spin.value(),
                 "duration": self.ca_duration_spin.value(),
                 "vs_init": self.ca_vs_init_combo.currentIndex() == 1,
-                "nb_steps": self.ca_nb_steps_spin.value(),
                 "record_dt": self.ca_record_dt_spin.value(),
                 "record_dI": self.ca_record_dI_spin.value(),
                 "repeat": self.ca_repeat_spin.value(),
@@ -1254,7 +1241,6 @@ class ExperimentBuilderTab(QWidget):
                 "voltage": self.calim_voltage_spin.value(),
                 "duration": self.calim_duration_spin.value(),
                 "vs_init": self.calim_vs_init_combo.currentIndex() == 1,
-                "nb_steps": self.calim_nb_steps_spin.value(),
                 "record_dt": self.calim_record_dt_spin.value(),
                 "record_dI": self.calim_record_dI_spin.value(),
                 "repeat": self.calim_repeat_spin.value(),
@@ -1271,7 +1257,6 @@ class ExperimentBuilderTab(QWidget):
                 "current": self.cp_current_spin.value(),
                 "duration": self.cp_duration_spin.value(),
                 "vs_init": self.cp_vs_init_combo.currentIndex() == 1,
-                "nb_steps": self.cp_nb_steps_spin.value(),
                 "record_dt": self.cp_record_dt_spin.value(),
                 "record_dE": self.cp_record_dE_spin.value(),
                 "repeat": self.cp_repeat_spin.value(),
@@ -1284,7 +1269,6 @@ class ExperimentBuilderTab(QWidget):
                 "current": self.cplim_current_spin.value(),
                 "duration": self.cplim_duration_spin.value(),
                 "vs_init": self.cplim_vs_init_combo.currentIndex() == 1,
-                "nb_steps": self.cplim_nb_steps_spin.value(),
                 "record_dt": self.cplim_record_dt_spin.value(),
                 "record_dE": self.cplim_record_dE_spin.value(),
                 "repeat": self.cplim_repeat_spin.value(),
@@ -1588,7 +1572,8 @@ class ExperimentBuilderTab(QWidget):
         if "external_control" in pot:
             self.external_control_check.setChecked(pot["external_control"])
 
-        self._sequence_specs = list(data.get("sequence", []))
+        # settings saved by earlier versions carry "nb_steps" (EC-Lab's step index, always 0 here): drop it
+        self._sequence_specs = [{k: v for k, v in spec.items() if k != "nb_steps"} for spec in data.get("sequence", [])]
         self.sequence_list.clear()
         for spec in self._sequence_specs:
             self._add_sequence_list_item(spec)
