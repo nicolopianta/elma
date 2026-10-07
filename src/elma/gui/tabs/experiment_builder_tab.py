@@ -59,6 +59,7 @@ from elma.design import (
 )
 from elma.gui.help_button import HelpButton, help_row, with_help
 from elma.gui.plot_toolbar import canvas_with_toolbar
+from elma.gui.quantity import CURRENT_UNITS, TIME_UNITS, VOLTAGE_UNITS, QuantityEdit
 from elma.peis_geis import write_peis_geis_csv
 from elma.runs import has_finished
 
@@ -377,9 +378,13 @@ class ExperimentBuilderTab(QWidget):
         sign_combo.addItems(_LIMIT_SIGN_OPTIONS)
         logic_combo = QComboBox()
         logic_combo.addItems(_LIMIT_LOGIC_OPTIONS)
-        value_spin = QDoubleSpinBox()
+        value_spin = QuantityEdit(VOLTAGE_UNITS)
         value_spin.setRange(-1e6, 1e6)
         value_spin.setDecimals(6)
+        # the limit is a potential for "Ewe" and a current for "I"
+        type_combo.currentTextChanged.connect(
+            lambda variable, spin=value_spin: spin.setUnits(CURRENT_UNITS if variable == "I" else VOLTAGE_UNITS)
+        )
         setattr(self, f"{prefix}_limit_type_combo", type_combo)
         setattr(self, f"{prefix}_limit_sign_combo", sign_combo)
         setattr(self, f"{prefix}_limit_logic_combo", logic_combo)
@@ -406,7 +411,7 @@ class ExperimentBuilderTab(QWidget):
         # -- Chrono-Amperometry --
         ca_widget = QWidget()
         ca_form = QFormLayout(ca_widget)
-        self.ca_voltage_spin = QDoubleSpinBox()
+        self.ca_voltage_spin = QuantityEdit(VOLTAGE_UNITS)
         self.ca_voltage_spin.setRange(-10, 10)
         self.ca_voltage_spin.setDecimals(4)
         self.ca_duration_spin = QDoubleSpinBox()
@@ -418,19 +423,19 @@ class ExperimentBuilderTab(QWidget):
         self.ca_record_dt_spin = QDoubleSpinBox()
         self.ca_record_dt_spin.setRange(0, 1e6)
         self.ca_record_dt_spin.setValue(1)
-        self.ca_record_dI_spin = QDoubleSpinBox()
+        self.ca_record_dI_spin = QuantityEdit(CURRENT_UNITS)
         self.ca_record_dI_spin.setRange(0, 1e6)
         self.ca_record_dI_spin.setValue(1)
         self.ca_repeat_spin = QSpinBox()
         self.ca_repeat_spin.setRange(0, 999)
         self.ca_i_range_combo = self._build_irange_combo()
         self.ca_bandwidth_combo = self._build_bandwidth_combo()
-        ca_form.addRow("Voltage (V)", self.ca_voltage_spin)
+        ca_form.addRow("Voltage", self.ca_voltage_spin)
         ca_form.addRow("Duration (s)", self.ca_duration_spin)
         ca_form.addRow("vs.", self.ca_vs_init_combo)
         ca_form.addRow("Number of steps", self.ca_nb_steps_spin)
         ca_form.addRow("Record every dt (s)", self.ca_record_dt_spin)
-        ca_form.addRow("Record every dI (mA)", self.ca_record_dI_spin)
+        ca_form.addRow("Record every dI", self.ca_record_dI_spin)
         ca_form.addRow("Repeat (cycles)", self.ca_repeat_spin)
         ca_form.addRow("I range", self.ca_i_range_combo)
         ca_form.addRow("Bandwidth", self.ca_bandwidth_combo)
@@ -439,7 +444,7 @@ class ExperimentBuilderTab(QWidget):
         # -- Chrono-Amperometry with Limit --
         calim_widget = QWidget()
         calim_form = QFormLayout(calim_widget)
-        self.calim_voltage_spin = QDoubleSpinBox()
+        self.calim_voltage_spin = QuantityEdit(VOLTAGE_UNITS)
         self.calim_voltage_spin.setRange(-10, 10)
         self.calim_voltage_spin.setDecimals(4)
         self.calim_duration_spin = QDoubleSpinBox()
@@ -451,19 +456,19 @@ class ExperimentBuilderTab(QWidget):
         self.calim_record_dt_spin = QDoubleSpinBox()
         self.calim_record_dt_spin.setRange(0, 1e6)
         self.calim_record_dt_spin.setValue(1)
-        self.calim_record_dI_spin = QDoubleSpinBox()
+        self.calim_record_dI_spin = QuantityEdit(CURRENT_UNITS)
         self.calim_record_dI_spin.setRange(0, 1e6)
         self.calim_record_dI_spin.setValue(1)
         self.calim_repeat_spin = QSpinBox()
         self.calim_repeat_spin.setRange(0, 999)
         self.calim_i_range_combo = self._build_irange_combo()
         self.calim_bandwidth_combo = self._build_bandwidth_combo()
-        calim_form.addRow("Voltage (V)", self.calim_voltage_spin)
+        calim_form.addRow("Voltage", self.calim_voltage_spin)
         calim_form.addRow("Duration (s)", self.calim_duration_spin)
         calim_form.addRow("vs.", self.calim_vs_init_combo)
         calim_form.addRow("Number of steps", self.calim_nb_steps_spin)
         calim_form.addRow("Record every dt (s)", self.calim_record_dt_spin)
-        calim_form.addRow("Record every dI (mA)", self.calim_record_dI_spin)
+        calim_form.addRow("Record every dI", self.calim_record_dI_spin)
         calim_form.addRow("Repeat (cycles)", self.calim_repeat_spin)
         calim_form.addRow("I range", self.calim_i_range_combo)
         calim_form.addRow("Bandwidth", self.calim_bandwidth_combo)
@@ -473,7 +478,7 @@ class ExperimentBuilderTab(QWidget):
         # -- Chrono-Potentiometry --
         cp_widget = QWidget()
         cp_form = QFormLayout(cp_widget)
-        self.cp_current_spin = QDoubleSpinBox()
+        self.cp_current_spin = QuantityEdit(CURRENT_UNITS)
         self.cp_current_spin.setRange(-10, 10)
         self.cp_current_spin.setDecimals(6)
         self.cp_duration_spin = QDoubleSpinBox()
@@ -485,7 +490,7 @@ class ExperimentBuilderTab(QWidget):
         self.cp_record_dt_spin = QDoubleSpinBox()
         self.cp_record_dt_spin.setRange(0, 1e6)
         self.cp_record_dt_spin.setValue(1)
-        self.cp_record_dE_spin = QDoubleSpinBox()
+        self.cp_record_dE_spin = QuantityEdit(VOLTAGE_UNITS)
         self.cp_record_dE_spin.setRange(0, 1e6)
         self.cp_record_dE_spin.setValue(1)
         self.cp_repeat_spin = QSpinBox()
@@ -493,12 +498,12 @@ class ExperimentBuilderTab(QWidget):
         self.cp_i_range_combo = self._build_irange_combo()
         self.cp_i_range_combo.setCurrentText("10 mA")
         self.cp_bandwidth_combo = self._build_bandwidth_combo()
-        cp_form.addRow("Current (A)", self.cp_current_spin)
+        cp_form.addRow("Current", self.cp_current_spin)
         cp_form.addRow("Duration (s)", self.cp_duration_spin)
         cp_form.addRow("vs.", self.cp_vs_init_combo)
         cp_form.addRow("Number of steps", self.cp_nb_steps_spin)
         cp_form.addRow("Record every dt (s)", self.cp_record_dt_spin)
-        cp_form.addRow("Record every dE (mV)", self.cp_record_dE_spin)
+        cp_form.addRow("Record every dE", self.cp_record_dE_spin)
         cp_form.addRow("Repeat (cycles)", self.cp_repeat_spin)
         self.cp_i_range_combo.setToolTip("Must not be Auto for this technique.")
         cp_form.addRow("I range", self.cp_i_range_combo)
@@ -508,7 +513,7 @@ class ExperimentBuilderTab(QWidget):
         # -- Chrono-Potentiometry with Limit --
         cplim_widget = QWidget()
         cplim_form = QFormLayout(cplim_widget)
-        self.cplim_current_spin = QDoubleSpinBox()
+        self.cplim_current_spin = QuantityEdit(CURRENT_UNITS)
         self.cplim_current_spin.setRange(-10, 10)
         self.cplim_current_spin.setDecimals(6)
         self.cplim_duration_spin = QDoubleSpinBox()
@@ -520,7 +525,7 @@ class ExperimentBuilderTab(QWidget):
         self.cplim_record_dt_spin = QDoubleSpinBox()
         self.cplim_record_dt_spin.setRange(0, 1e6)
         self.cplim_record_dt_spin.setValue(1)
-        self.cplim_record_dE_spin = QDoubleSpinBox()
+        self.cplim_record_dE_spin = QuantityEdit(VOLTAGE_UNITS)
         self.cplim_record_dE_spin.setRange(0, 1e6)
         self.cplim_record_dE_spin.setValue(1)
         self.cplim_repeat_spin = QSpinBox()
@@ -528,12 +533,12 @@ class ExperimentBuilderTab(QWidget):
         self.cplim_i_range_combo = self._build_irange_combo()
         self.cplim_i_range_combo.setCurrentText("10 mA")
         self.cplim_bandwidth_combo = self._build_bandwidth_combo()
-        cplim_form.addRow("Current (A)", self.cplim_current_spin)
+        cplim_form.addRow("Current", self.cplim_current_spin)
         cplim_form.addRow("Duration (s)", self.cplim_duration_spin)
         cplim_form.addRow("vs.", self.cplim_vs_init_combo)
         cplim_form.addRow("Number of steps", self.cplim_nb_steps_spin)
         cplim_form.addRow("Record every dt (s)", self.cplim_record_dt_spin)
-        cplim_form.addRow("Record every dE (mV)", self.cplim_record_dE_spin)
+        cplim_form.addRow("Record every dE", self.cplim_record_dE_spin)
         cplim_form.addRow("Repeat (cycles)", self.cplim_repeat_spin)
         self.cplim_i_range_combo.setToolTip("Must not be Auto for this technique.")
         cplim_form.addRow("I range", self.cplim_i_range_combo)
@@ -565,15 +570,15 @@ class ExperimentBuilderTab(QWidget):
         peis_form = QFormLayout(peis_widget)
         self.peis_vs_init_combo = self._build_vs_combo()
         peis_form.addRow("vs.", self.peis_vs_init_combo)
-        self.peis_voltage_step_spin = QDoubleSpinBox()
+        self.peis_voltage_step_spin = QuantityEdit(VOLTAGE_UNITS)
         self.peis_voltage_step_spin.setRange(-10, 10)
         self.peis_voltage_step_spin.setDecimals(6)
-        peis_form.addRow("Initial voltage step (V)", self.peis_voltage_step_spin)
-        self.peis_amplitude_spin = QDoubleSpinBox()
+        peis_form.addRow("Initial voltage step", self.peis_voltage_step_spin)
+        self.peis_amplitude_spin = QuantityEdit(VOLTAGE_UNITS)
         self.peis_amplitude_spin.setRange(0, 10)
         self.peis_amplitude_spin.setDecimals(6)
         self.peis_amplitude_spin.setValue(0.05)
-        peis_form.addRow("Sine amplitude (V)", self.peis_amplitude_spin)
+        peis_form.addRow("Sine amplitude", self.peis_amplitude_spin)
         self.peis_initial_freq_spin = QDoubleSpinBox()
         self.peis_initial_freq_spin.setRange(1e-6, 1e7)
         self.peis_initial_freq_spin.setDecimals(6)
@@ -625,10 +630,10 @@ class ExperimentBuilderTab(QWidget):
         self.peis_record_dt_spin.setRange(0, 1e6)
         self.peis_record_dt_spin.setValue(0.0)
         peis_form.addRow("Record every dT (s)", self.peis_record_dt_spin)
-        self.peis_record_dI_spin = QDoubleSpinBox()
+        self.peis_record_dI_spin = QuantityEdit(CURRENT_UNITS)
         self.peis_record_dI_spin.setRange(0, 1e6)
         self.peis_record_dI_spin.setValue(0.0)
-        peis_form.addRow("Record every dI (A)", self.peis_record_dI_spin)
+        peis_form.addRow("Record every dI", self.peis_record_dI_spin)
         self.peis_external_control_check = QCheckBox("Enable external control (AWG) for this step")
         self.peis_external_control_check.setChecked(False)
         peis_form.addRow(with_help(
@@ -650,14 +655,14 @@ class ExperimentBuilderTab(QWidget):
         geis_form = QFormLayout(geis_widget)
         self.geis_vs_init_combo = self._build_vs_combo()
         geis_form.addRow("vs.", self.geis_vs_init_combo)
-        self.geis_current_step_spin = QDoubleSpinBox()
+        self.geis_current_step_spin = QuantityEdit(CURRENT_UNITS)
         self.geis_current_step_spin.setRange(-10, 10)
         self.geis_current_step_spin.setDecimals(6)
-        geis_form.addRow("Initial current step (A)", self.geis_current_step_spin)
-        self.geis_amplitude_spin = QDoubleSpinBox()
+        geis_form.addRow("Initial current step", self.geis_current_step_spin)
+        self.geis_amplitude_spin = QuantityEdit(CURRENT_UNITS)
         self.geis_amplitude_spin.setRange(0, 10)
         self.geis_amplitude_spin.setDecimals(6)
-        geis_form.addRow("Sine amplitude (A)", self.geis_amplitude_spin)
+        geis_form.addRow("Sine amplitude", self.geis_amplitude_spin)
         self.geis_initial_freq_spin = QDoubleSpinBox()
         self.geis_initial_freq_spin.setRange(1e-6, 1e7)
         self.geis_initial_freq_spin.setDecimals(6)
@@ -709,10 +714,10 @@ class ExperimentBuilderTab(QWidget):
         self.geis_record_dt_spin.setRange(0, 1e6)
         self.geis_record_dt_spin.setValue(0.0)
         geis_form.addRow("Record every dT (s)", self.geis_record_dt_spin)
-        self.geis_record_dE_spin = QDoubleSpinBox()
+        self.geis_record_dE_spin = QuantityEdit(VOLTAGE_UNITS)
         self.geis_record_dE_spin.setRange(0, 1e6)
         self.geis_record_dE_spin.setValue(0.0)
-        geis_form.addRow("Record every dE (V)", self.geis_record_dE_spin)
+        geis_form.addRow("Record every dE", self.geis_record_dE_spin)
         self.geis_i_range_combo = self._build_irange_combo()
         geis_form.addRow("I range", self.geis_i_range_combo)
         self.geis_external_control_check = QCheckBox("Enable external control (AWG) for this step")
@@ -814,10 +819,11 @@ class ExperimentBuilderTab(QWidget):
         self.condition_sign_combo = QComboBox()
         self.condition_sign_combo.addItems(_LIMIT_SIGN_OPTIONS)
         form.addRow("Sign", self.condition_sign_combo)
-        self.condition_threshold_spin = QDoubleSpinBox()
+        self.condition_threshold_spin = QuantityEdit(VOLTAGE_UNITS)
         self.condition_threshold_spin.setRange(-1e6, 1e6)
         self.condition_threshold_spin.setDecimals(6)
         form.addRow("Threshold", self.condition_threshold_spin)
+        self.condition_quantity_combo.currentTextChanged.connect(self._on_condition_quantity_changed)
         self.condition_window_spin = QSpinBox()
         self.condition_window_spin.setRange(1, 100_000)
         self.condition_window_spin.setValue(60)
@@ -995,19 +1001,17 @@ class ExperimentBuilderTab(QWidget):
             "injected voltage must not exceed +/-1V -- checked at Start, and shown "
             "resolved to volts in Preview configuration."
         ))
-        self.awg_amplitude_spin = QDoubleSpinBox()
+        self.awg_amplitude_spin = QuantityEdit(VOLTAGE_UNITS)
         self.awg_amplitude_spin.setRange(0, 10)
         self.awg_amplitude_spin.setDecimals(6)
         self.awg_amplitude_spin.setValue(0.05)
-        self.awg_amplitude_label = QLabel("Amplitude, peak-to-peak (V)")
+        self.awg_amplitude_label = QLabel("Amplitude, peak-to-peak")
         form.addRow(self.awg_amplitude_label, self.awg_amplitude_spin)
         return group
 
     def _on_awg_amplitude_type_changed(self, amplitude_type: str):
-        if amplitude_type == "Current (A)":
-            self.awg_amplitude_label.setText("Amplitude, peak-to-peak (A)")
-        else:
-            self.awg_amplitude_label.setText("Amplitude, peak-to-peak (V)")
+        # the number box offers volts or amperes to match
+        self.awg_amplitude_spin.setUnits(CURRENT_UNITS if amplitude_type == "Current (A)" else VOLTAGE_UNITS)
 
     def _build_scope_group(self) -> QWidget:
         group = QGroupBox("Oscilloscope")
@@ -1070,7 +1074,7 @@ class ExperimentBuilderTab(QWidget):
         self.scope_range_b_combo.setCurrentText("±500 mV")
         form.addRow("Channel B range (current probe)", self.scope_range_b_combo)
 
-        self.scope_conv_factor_vref_spin = QDoubleSpinBox()
+        self.scope_conv_factor_vref_spin = QuantityEdit(VOLTAGE_UNITS)
         self.scope_conv_factor_vref_spin.setRange(1e-9, 1e9)
         self.scope_conv_factor_vref_spin.setDecimals(6)
         # The current-monitor output is treated as equivalent to a
@@ -1089,7 +1093,7 @@ class ExperimentBuilderTab(QWidget):
         # of current). Re-run the dummy-cell check if this default doesn't
         # hold on your hardware.
         self.scope_conv_factor_vref_spin.setValue(1.0)
-        form.addRow("Current monitor: V at full-scale I range (V)", with_help(
+        form.addRow("Current monitor: V at full-scale I range", with_help(
             self.scope_conv_factor_vref_spin,
             "The oscilloscope's actual current conversion factor is computed "
             "automatically from the first sequence step's I range: "
@@ -1361,8 +1365,14 @@ class ExperimentBuilderTab(QWidget):
     def _condition_spec_label(spec: dict) -> str:
         return (
             f"step {spec['technique_index']}: {spec['quantity']} {spec['operator']} "
-            f"{spec['threshold']} (avg over {spec['num_elements']}s)"
+            f"{spec['threshold']} {({'I': 'A', 'ElapsedTime': 's'}).get(spec['quantity'], 'V')} "
+            f"(avg over {spec['num_elements']}s)"
         )
+
+    def _on_condition_quantity_changed(self, quantity: str):
+        """EC-Lab reports Ewe/Ece in V, I in A and ElapsedTime in s: the threshold box offers those units."""
+        units = {"I": CURRENT_UNITS, "ElapsedTime": TIME_UNITS}.get(quantity, VOLTAGE_UNITS)
+        self.condition_threshold_spin.setUnits(units)
 
     def _on_add_condition(self):
         spec = {
