@@ -54,13 +54,11 @@ They are rewritten after every block (`BlockCalculator(save_dir=...)`), so a cra
 - `elma.multisinegen` — multisine waveform generation/sequencing for the AWG.
 - `elma.utils` — shared acquisition helpers (software limit conditions, logging, serialization).
 - `elma.runs` — run kinds without a `DEISchannel`: potentiostat only, raw whole-run capture, AWG step follower.
-- `elma.peis_geis` — PEIS/GEIS techniques and `PEISAwareChannel` (decodes the impedance points EC-Lab emits).
 - `elma.config` — experiment settings → resolved configuration (capture size, analysis window, AWG amplitude,
   scope current scale, …), no GUI needed.
 - `elma.builder` — configuration → run (`build_run`), the code behind the GUI's *Start experiment*.
 - `elma.design` — multisine design: IMD-safe frequencies, phase optimisation, band splitting, scaling, JSON.
 - `elma.gui` — the graphical interface.
-- `elma._compat` — workaround for a data-loss bug in `npbuffer` (applied automatically).
 
 `examples/` contains full measurement scripts showing acquisition + processing wired together against real hardware.
 

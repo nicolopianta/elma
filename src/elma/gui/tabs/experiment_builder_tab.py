@@ -6,7 +6,7 @@ oscilloscope, online decimation/analysis) and runs it on "Start Experiment". The
 widgets and plots: the experiment logic lives in the library --
   elma.config   settings -> resolved configuration (capture size, AWG amplitude, scope scales, ...)
   elma.builder  configuration -> run (DEISchannel / RawCaptureRun / PotentiostatOnlyRun)
-  elma.runs, elma.peis_geis   run kinds and the PEIS/GEIS channel
+  elma.runs     run kinds (the PEIS/GEIS channel is pyeclab's PEISAwareChannel)
 so a measurement saved from here can be run without the GUI (see elma.builder).
 
 A split (low/high band) multisine design drives two physical AWG channels, digitally combined into
@@ -60,7 +60,6 @@ from elma.design import (
 from elma.gui.help_button import HelpButton, help_row, with_help
 from elma.gui.plot_toolbar import canvas_with_toolbar
 from elma.gui.quantity import CURRENT_UNITS, TIME_UNITS, VOLTAGE_UNITS, QuantityEdit, TimeEdit
-from elma.peis_geis import write_peis_geis_csv
 from elma.runs import has_finished
 
 # Option lists and label <-> SDK maps shared with the library (elma.config); the underscore names are
@@ -1900,7 +1899,7 @@ class ExperimentBuilderTab(QWidget):
 
     def _peis_geis_channel_points(self):
         """(freqs, z, step_index) of the PEIS/GEIS points received so far, or None (thread-safe
-        snapshot, see elma.peis_geis.PEISAwareChannel.peis_geis_points)."""
+        snapshot, see pyeclab.PEISAwareChannel.peis_geis_points)."""
         channel_obj = getattr(self._deischannel, "potentiostat", None) if self._deischannel is not None else None
         points = getattr(channel_obj, "peis_geis_points", None)
         return points() if points is not None else None

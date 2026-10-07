@@ -13,7 +13,6 @@ from deistools.processing import detrending
 
 from pyeclab import Channel
 
-from elma._compat import patch_npbuffer
 from elma.utils import log_online_analysis_error, log_online_analysis_timing
 
 
@@ -45,7 +44,6 @@ class BlockCalculator:
     current_ds: NumpyCircularBuffer = field(init=False)
     
     def __post_init__(self):
-        patch_npbuffer()  # no-op unless the installed npbuffer still has its data-loss bug
         self.save_dir = None if self.save_dir is None else Path(self.save_dir)
         self.high_z_calculator.compute_freq_axis()
         self.voltage_ds = NumpyCircularBuffer(self.buffer_size, np.float32)

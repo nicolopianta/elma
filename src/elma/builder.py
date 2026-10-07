@@ -51,11 +51,10 @@ class Hardware:
 def default_hardware() -> Hardware:
     """The real instrument classes (pyeclab, pypicostreaming, trueformawg)."""
     import pyeclab.techniques as techniques
-    from pyeclab import BANDWIDTH, E_RANGE, I_RANGE, BiologicDevice, ChannelConfig, FileWriter
+    from pyeclab import BANDWIDTH, E_RANGE, I_RANGE, BiologicDevice, ChannelConfig, FileWriter, PEISAwareChannel
+    from pyeclab.techniques import GEISTechnique, PEISTechnique
     from pypicostreaming import Picoscope4000, Picoscope5000a
     from trueformawg import TrueFormAWG
-
-    from elma.peis_geis import GEISTechnique, PEISAwareChannel, PEISTechnique
 
     return Hardware(
         BiologicDevice=BiologicDevice, ChannelConfig=ChannelConfig, FileWriter=FileWriter,
