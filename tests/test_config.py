@@ -71,6 +71,24 @@ def loop(repeat_n, start):
     return {"type": "Loop", "repeat_N": repeat_n, "loop_start": start}
 
 
+class PeisGeisRecording(unittest.TestCase):
+    def test_zeros_are_replaced_so_the_instrument_does_not_record_every_sample(self):
+        self.assertEqual(C.peis_geis_recording({"type": "PEIS", "record_dt": 0.0, "record_dI": 0.0}), (0.1, 1.0, True))
+        self.assertEqual(C.peis_geis_recording({"type": "GEIS", "record_dt": 0.0, "record_dE": 0.0}), (0.1, 1.0, True))
+
+    def test_each_value_is_checked_on_its_own(self):
+        self.assertEqual(C.peis_geis_recording({"type": "PEIS", "record_dt": 2.0, "record_dI": 0.0}), (2.0, 1.0, True))
+        self.assertEqual(C.peis_geis_recording({"type": "GEIS", "record_dt": 0.0, "record_dE": 0.05}), (0.1, 0.05, True))
+
+    def test_positive_values_are_kept(self):
+        self.assertEqual(C.peis_geis_recording({"type": "PEIS", "record_dt": 0.5, "record_dI": 1e-3}), (0.5, 1e-3, False))
+        self.assertEqual(C.peis_geis_recording({"type": "GEIS", "record_dt": 0.5, "record_dE": 0.1}), (0.5, 0.1, False))
+
+    def test_peis_reads_dI_and_geis_reads_dE(self):
+        self.assertEqual(C.peis_geis_recording({"type": "PEIS", "record_dt": 1.0, "record_dI": 0.3, "record_dE": 0.0})[1], 0.3)
+        self.assertEqual(C.peis_geis_recording({"type": "GEIS", "record_dt": 1.0, "record_dE": 0.3, "record_dI": 0.0})[1], 0.3)
+
+
 class StepPasses(unittest.TestCase):
     def test_no_loop_means_one_pass(self):
         self.assertEqual(C.step_passes([ca(), OCV, cp()]), [1, 1, 1])

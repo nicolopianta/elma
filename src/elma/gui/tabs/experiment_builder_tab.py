@@ -612,11 +612,17 @@ class ExperimentBuilderTab(QWidget):
         peis_form.addRow(self.peis_duration_estimate_label)
         self.peis_record_dt_spin = QDoubleSpinBox()
         self.peis_record_dt_spin.setRange(0, 1e6)
-        self.peis_record_dt_spin.setValue(0.0)
+        self.peis_record_dt_spin.setValue(0.1)
+        self.peis_record_dt_spin.setToolTip(
+            "0 makes the instrument record every sample (about 40 000 points per second) during the initial hold: its memory fills and the frequency-sweep results can be lost. Zero is replaced by the default."
+        )
         peis_form.addRow("Record every dT (s)", self.peis_record_dt_spin)
         self.peis_record_dI_spin = QuantityEdit(CURRENT_UNITS)
         self.peis_record_dI_spin.setRange(0, 1e6)
-        self.peis_record_dI_spin.setValue(0.0)
+        self.peis_record_dI_spin.setValue(1.0)
+        self.peis_record_dI_spin.setToolTip(
+            "0 makes the instrument record every sample (about 40 000 points per second) during the initial hold: its memory fills and the frequency-sweep results can be lost. Zero is replaced by the default."
+        )
         peis_form.addRow("Record every dI", self.peis_record_dI_spin)
         self.peis_external_control_check = QCheckBox("Enable external control (AWG) for this step")
         self.peis_external_control_check.setChecked(False)
@@ -696,11 +702,17 @@ class ExperimentBuilderTab(QWidget):
         geis_form.addRow(self.geis_duration_estimate_label)
         self.geis_record_dt_spin = QDoubleSpinBox()
         self.geis_record_dt_spin.setRange(0, 1e6)
-        self.geis_record_dt_spin.setValue(0.0)
+        self.geis_record_dt_spin.setValue(0.1)
+        self.geis_record_dt_spin.setToolTip(
+            "0 makes the instrument record every sample (about 40 000 points per second) during the initial hold: its memory fills and the frequency-sweep results can be lost. Zero is replaced by the default."
+        )
         geis_form.addRow("Record every dT (s)", self.geis_record_dt_spin)
         self.geis_record_dE_spin = QuantityEdit(VOLTAGE_UNITS)
         self.geis_record_dE_spin.setRange(0, 1e6)
-        self.geis_record_dE_spin.setValue(0.0)
+        self.geis_record_dE_spin.setValue(1.0)
+        self.geis_record_dE_spin.setToolTip(
+            "0 makes the instrument record every sample (about 40 000 points per second) during the initial hold: its memory fills and the frequency-sweep results can be lost. Zero is replaced by the default."
+        )
         geis_form.addRow("Record every dE", self.geis_record_dE_spin)
         self.geis_i_range_combo = self._build_irange_combo()
         geis_form.addRow("I range", self.geis_i_range_combo)

@@ -122,11 +122,15 @@ def build_sequence(config: dict, device, hw: Hardware, channel_config):
             # measure through the potentiostat's own internal sine generator, and silently
             # inheriting the global xctr would defeat that.
             step_xctr = t.generate_xctr_param(hw.ChannelConfig(external_control=spec["external_control"]))
+            record_dt, record_d, corrected = C.peis_geis_recording(spec)
+            if corrected:
+                print(f"{kind} step: 'record every dT' / 'record every {'dI' if kind == 'PEIS' else 'dE'}' of 0 make the "
+                      f"instrument record every sample and lose the sweep results; using {record_dt:g} s / {record_d:g}.")
             if kind == "PEIS":
                 tech = hw.PEISTechnique(
                     device=device, vs_initial=spec["vs_init"], initial_voltage_step=spec["voltage_step"],
-                    duration_step=spec["duration"], record_every_dT=spec["record_dt"],
-                    record_every_dI=spec["record_dI"], initial_frequency=spec["initial_frequency"],
+                    duration_step=spec["duration"], record_every_dT=record_dt,
+                    record_every_dI=record_d, initial_frequency=spec["initial_frequency"],
                     final_frequency=spec["final_frequency"], sweep_linear=spec["sweep_linear"],
                     amplitude_voltage=spec["amplitude"], frequency_number=spec["frequency_number"],
                     average_n_times=spec["average_n_times"], correction=spec["correction"],
@@ -135,8 +139,8 @@ def build_sequence(config: dict, device, hw: Hardware, channel_config):
             else:
                 tech = hw.GEISTechnique(
                     device=device, vs_initial=spec["vs_init"], initial_current_step=spec["current_step"],
-                    duration_step=spec["duration"], record_every_dT=spec["record_dt"],
-                    record_every_dE=spec["record_dE"], initial_frequency=spec["initial_frequency"],
+                    duration_step=spec["duration"], record_every_dT=record_dt,
+                    record_every_dE=record_d, initial_frequency=spec["initial_frequency"],
                     final_frequency=spec["final_frequency"], sweep_linear=spec["sweep_linear"],
                     amplitude_current=spec["amplitude"], frequency_number=spec["frequency_number"],
                     average_n_times=spec["average_n_times"], correction=spec["correction"],

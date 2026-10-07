@@ -137,6 +137,27 @@ def compute_analysis_window_and_buffer(frequencies, sequence, sampling_time_s):
     return window_size, buffer_duration
 
 
+# PEIS/GEIS record the initial hold (process 0) and the instrument stores every point of it in its own memory. "Record
+# every dT" = 0 or "record every dI/dE" = 0 mean "record every sample" (one point per 24 us, ~40 000 rows/s): the
+# memory fills within ~1 s, and the frequency-sweep results of a sweep that is short compared with the hold are lost
+# (measured on the two-RC cell: GEIS 1 kHz -> 100 Hz, 4 points, wait 1 period, 0/0 -> no point at all; 0.1 s / 1 V
+# -> 4 points; any positive dT AND a non-zero dI/dE are needed). The hold data is dropped by elma anyway.
+PEIS_GEIS_DEFAULT_RECORD_DT = 0.1      # s
+PEIS_GEIS_RECORD_NEVER = 1.0           # A / V: a change this large never happens, so only dT triggers a record
+
+
+def peis_geis_recording(spec: dict):
+    """(record_dt, record_dI or record_dE, corrected) of a PEIS/GEIS step, with zeros replaced by the defaults above."""
+    key = "record_dI" if spec["type"] == "PEIS" else "record_dE"
+    record_dt, record_d = float(spec["record_dt"]), float(spec[key])
+    corrected = record_dt <= 0 or record_d <= 0
+    if record_dt <= 0:
+        record_dt = PEIS_GEIS_DEFAULT_RECORD_DT
+    if record_d <= 0:
+        record_d = PEIS_GEIS_RECORD_NEVER
+    return record_dt, record_d, corrected
+
+
 def step_passes(sequence) -> list:
     """
     How many times the instrument runs each step of `sequence`, Loop steps included. A Loop step with

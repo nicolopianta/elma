@@ -252,6 +252,10 @@ class ExperimentBuilderDurations(unittest.TestCase):
         self.assertEqual([s["duration"] for s in self.tab._sequence_specs], [3723.0, 45.0])
         self.assertEqual(self.tab._sequence_specs[0]["type"], "CA")
 
+    def test_peis_geis_default_to_a_recording_that_does_not_flood_the_instrument(self):
+        self.assertEqual((self.tab.peis_record_dt_spin.value(), self.tab.peis_record_dI_spin.value()), (0.1, 1.0))
+        self.assertEqual((self.tab.geis_record_dt_spin.value(), self.tab.geis_record_dE_spin.value()), (0.1, 1.0))
+
     def test_default_duration_is_thirty_seconds(self):
         for name in ("ca", "calim", "cp", "cplim", "ocv"):
             self.assertEqual(getattr(self.tab, f"{name}_duration_spin").hms(), (0, 0, 30.0))

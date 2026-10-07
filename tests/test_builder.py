@@ -170,6 +170,16 @@ class Sequence(unittest.TestCase):
         self.assertEqual(peis.kwargs["initial_voltage_step"], 0.0)
         self.assertEqual((loop.kwargs["repeat_N"], loop.kwargs["loop_start"]), (1, 0))
 
+    def test_peis_geis_never_record_every_sample(self):
+        hw = _hardware()
+        settings = _settings([_spec("PEIS"), _spec("GEIS"), _spec("PEIS", record_dt=0.5, record_dI=1e-3)])
+        config = C.resolve_configuration(settings, _Design())
+        seq = builder.build_sequence(config, FakeDevice("USB0"), hw, FakeChannelConfig(external_control=False))
+        peis, geis, peis_explicit = seq
+        self.assertEqual((peis.kwargs["record_every_dT"], peis.kwargs["record_every_dI"]), (0.1, 1.0))
+        self.assertEqual((geis.kwargs["record_every_dT"], geis.kwargs["record_every_dE"]), (0.1, 1.0))
+        self.assertEqual((peis_explicit.kwargs["record_every_dT"], peis_explicit.kwargs["record_every_dI"]), (0.5, 1e-3))
+
     def test_peis_step_can_enable_its_own_external_control(self):
         hw = _hardware()
         config = C.resolve_configuration(_settings([_spec("PEIS", external_control=True)]), _Design())
