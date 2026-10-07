@@ -298,6 +298,7 @@ def build_run(config: dict, multisine=None, multisine_split=None, hardware: Opti
     )
     pico_calculator = PicoCalculator(
         pico=pico, block_calculator=block_calculator, potentiostat=channel, deis_indexes=deis_indexes,
+        skip_start_seconds=C.DEIS_EDGE_SECONDS, skip_end_seconds=C.DEIS_EDGE_SECONDS,
     )
     return DEISchannel(
         potentiostat=channel, pico=pico_calculator, frequencies=frequencies, awg=awg,

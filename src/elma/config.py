@@ -137,6 +137,15 @@ def compute_analysis_window_and_buffer(frequencies, sequence, sampling_time_s):
     return window_size, buffer_duration
 
 
+# Seconds at the start and at the end of every DEIS step whose scope data are not trusted. The potentiostat, the AWG and
+# the scope are three instruments without a common clock, and the sequence is followed by polling once a second: the
+# multisine can start up to ~1 s after the step does (the first window then partly holds an unperturbed signal), and the
+# step can be over for up to ~1 s before it is noticed (the last window partly holds the cell at rest, the multisine no
+# longer being applied). Measured on the two-RC cell with 1 s windows: first window unperturbed for ~0.2 s (error 34-46 %
+# instead of 1-5 %), last two windows 0.07 s and 1.0 s after the end (error 19-71 %). The windows that overlap these
+# edges by more than PicoCalculator.EDGE_TOLERANCE of their length are not analysed.
+DEIS_EDGE_SECONDS = 1.5
+
 # PEIS/GEIS record the initial hold (process 0) and the instrument stores every point of it in its own memory. "Record
 # every dT" = 0 or "record every dI/dE" = 0 mean "record every sample" (one point per 24 us, ~40 000 rows/s): the
 # memory fills within ~1 s, and the frequency-sweep results of a sweep that is short compared with the hold are lost

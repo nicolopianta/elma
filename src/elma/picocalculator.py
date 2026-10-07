@@ -1,3 +1,5 @@
+from collections import deque
+from math import ceil
 from pathlib import Path
 import numpy as np
 from threading import Thread
@@ -24,18 +26,42 @@ class PicoCalculator:
     A new calculation is never started while the previous one is still running: they mutate
     shared, unsynchronised state in the block calculator (voltage, current, ft_voltage, ...),
     and two overlapping calls corrupted each other's intermediate data.
+
+    skip_start_seconds / skip_end_seconds: the multisine does not start exactly with the step and the end of a step is
+    noticed late, so the scope data within these many seconds of the start and of the end of a DEIS step are not
+    trustworthy. The windows that overlap them by more than EDGE_TOLERANCE of their length are discarded: the first
+    ones are popped and dropped, and the last ones are held back until a later window proves that the step was still
+    running, so they are never calculated. Slow multisines (windows of minutes) lose nothing, because the overlap is
+    a small fraction of the window. 0 (default) keeps every window.
     """
+    EDGE_TOLERANCE = 0.02
     pico : Union[Picoscope4000, Picoscope5000a]
     block_calculator : BlockCalculator
     potentiostat : Channel
     running : bool = field(default=False)
     deis_indexes : Optional[list] = None
+    skip_start_seconds : float = 0.0
+    skip_end_seconds : float = 0.0
     computation_thread : Thread = field(init=False)
 
 
     def __post_init__ (self):
         self.run_thread = Thread(target=self._run)
         self.block_calculator.running = True
+        self._edge_index = None   # technique index of the step whose windows are being popped
+        self._skip_left = 0       # windows still to drop at the start of that step
+        self._held = deque()      # the latest windows, held back in case the step has already ended
+
+    def _windows_to_skip(self, seconds):
+        """How many whole windows cover `seconds` of data, or 0 if that is a negligible part of one."""
+        window = self.block_calculator.input_size * getattr(self.block_calculator, 'sampling_time', 0.0)
+        if seconds <= 0 or window <= 0 or seconds / window <= self.EDGE_TOLERANCE:
+            return 0
+        return ceil(seconds / window - 1e-9)
+
+    def _forget_step(self):
+        self._edge_index = None
+        self._held.clear()
 
 
     def start(self):
@@ -53,6 +79,7 @@ class PicoCalculator:
         self.pico.empty_buffers()
 
     def save_block_calculation(self, subfolder_name):
+        self._forget_step()    # the windows held back at the end of the step are never calculated
         if hasattr(self, 'computation_thread') and self.computation_thread.is_alive():
             self.computation_thread.join()
         saving_file_path = self.pico.saving_dir + subfolder_name
@@ -71,6 +98,7 @@ class PicoCalculator:
         """One polling cycle. Returns the updated count of popped blocks."""
         save_dir = getattr(self.block_calculator, 'save_dir', None)
         if not self._step_is_active():
+            self._forget_step()
             self.empty_buffers()
             return blocks_popped
         if hasattr(self, 'computation_thread') and self.computation_thread.is_alive():
@@ -96,6 +124,21 @@ class PicoCalculator:
                 self.pico.channels['B'].vrange,
                 self.pico.channels['B'].conv_factor
             )
+            index = self.potentiostat.current_tech_index
+            if index != self._edge_index:  # first window of a new step
+                self._edge_index = index
+                self._skip_left = self._windows_to_skip(self.skip_start_seconds)
+                self._held.clear()
+            if self._skip_left > 0:
+                self._skip_left -= 1
+                log_online_analysis_timing(save_dir, f'block {blocks_popped}: start of the step, dropped')
+                return blocks_popped
+            hold = self._windows_to_skip(self.skip_end_seconds)
+            if hold:
+                self._held.append((self.voltage_block, self.current_block))
+                if len(self._held) <= hold:
+                    return blocks_popped
+                self.voltage_block, self.current_block = self._held.popleft()
             self.computation_thread = Thread(target=self.block_calculator.calculate, args=(self.voltage_block, self.current_block,))
             self.computation_thread.start()
         return blocks_popped
