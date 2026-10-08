@@ -20,7 +20,8 @@ DMFA/detrending additions are merged upstream (see `pyproject.toml`).
 1. **The GUI** — `elma-gui`: *Multisine Designer*, *Experiment Builder* (potentiostat, technique sequence with
    a DEIS on/off flag per step, AWG, oscilloscope, online analysis, PEIS/GEIS, live plots) and *Inspection*
    (load a folder, time-resolved impedance slider, DMFA of the low-frequency band with Fermi-Dirac filters and
-   trend removal, spectra).
+   trend removal, post-processing of the impedance over time with Savitzky-Golay / Gaussian / moving average
+   or median smoothing and outlier removal, spectra).
 2. **From a settings file, without the GUI** — `examples/6-headless_from_settings_json.py` loads the JSON that
    the Experiment Builder saves, resolves it (`elma.config`) and builds the run (`elma.builder`).
 3. **By hand** — construct `DEISchannel`, `PicoCalculator`, `BlockCalculator` yourself, as in `examples/1…4`.
