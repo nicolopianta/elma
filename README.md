@@ -12,7 +12,7 @@ pip install elma[gui]       # + the graphical interface (elma-gui command)
 pip install elma[design]    # + multisine design without the GUI
 ```
 
-`pip install elma` depends on the `gui-support` branch of the `nicolopianta/DEIStools` fork until the
+`pip install elma` depends on the `gui-support-v2` branch of the `nicolopianta/DEIStools` fork until the
 DMFA/detrending additions are merged upstream (see `pyproject.toml`).
 
 ## Three ways to run a measurement

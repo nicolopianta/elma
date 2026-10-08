@@ -19,12 +19,13 @@ dependencies = [
     # The author's own packages are NOT on PyPI (and "multisine" on PyPI is an unrelated project): they
     # have to be installed from GitHub.
     # pyeclab (PEIS/GEIS techniques and their channel), npbuffer (push() data-loss fix), multisine (declared
-    # dependencies) and deistools (DMFA/detrending/loader) are needed from the gui-support branches of the
-    # nicolopianta forks until the changes are merged upstream (federicoscarpioni/<same name>); then switch
-    # these four URLs back to the upstream ones (drop "nicolopianta" and "@gui-support").
+    # dependencies) and deistools (DMFA/detrending/loader/smoothing) are needed from the nicolopianta forks until the
+    # changes are merged upstream (federicoscarpioni/<same name>): the gui-support branch of pyeclab, npbuffer and
+    # multisine, and gui-support-v2 of DEIStools (gui-support there still has the older history, based on an earlier
+    # upstream main); then switch these four URLs back to the upstream ones (drop "nicolopianta" and the "@branch").
     "pyeclab @ git+https://github.com/nicolopianta/pyeclab.git@gui-support",
     "npbuffer @ git+https://github.com/nicolopianta/npbuffer.git@gui-support",
-    "deistools @ git+https://github.com/nicolopianta/DEIStools.git@gui-support",
+    "deistools @ git+https://github.com/nicolopianta/DEIStools.git@gui-support-v2",
     "pypicostreaming @ git+https://github.com/federicoscarpioni/pypicostreaming.git",
     "trueformawg @ git+https://github.com/federicoscarpioni/trueformawg.git",
 ]
